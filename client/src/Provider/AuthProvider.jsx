@@ -1,4 +1,3 @@
-/* eslint-disable react/prop-types */
 import { createContext, useEffect, useState } from 'react'
 import {
   GoogleAuthProvider,
@@ -12,6 +11,7 @@ import {
 } from 'firebase/auth'
 import { app } from '../firebase/firebase.config'
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const AuthContext = createContext(null)
 const auth = getAuth(app)
 const googleProvider = new GoogleAuthProvider()
