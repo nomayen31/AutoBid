@@ -15,6 +15,7 @@ import {
   FaCalendarAlt,
   FaCommentDots,
   FaAt,
+  FaUserCircle,
 } from "react-icons/fa";
 import { AuthContext } from "../Provider/AuthProvider";
 import axios from "axios";
@@ -48,7 +49,7 @@ const CarDetails = () => {
     gallery_images,
     availability_status,
     _id,
-    buyer, // ✅ buyer object from AddCar
+    buyer,
   } = car;
 
   const [currentMainImage, setCurrentMainImage] = useState(main_image);
@@ -206,8 +207,8 @@ const CarDetails = () => {
 
       <hr className="my-8 border-gray-700" />
 
-      {/* Main Image + Highlights */}
       <div className="grid grid-cols-1 gap-12 lg:grid-cols-3">
+        {/* Main Image + Gallery Below */}
         <div className="lg:col-span-2">
           <Zoom>
             <img
@@ -216,8 +217,42 @@ const CarDetails = () => {
               className="object-cover w-full rounded-xl shadow-2xl transition-shadow duration-300 hover:shadow-3xl max-h-[600px]"
             />
           </Zoom>
+
+          {/* Gallery Views directly below main image */}
+          {gallery_images?.length > 0 && (
+            <div className="mt-6">
+              <h3 className="mb-3 text-xl font-semibold text-gray-100">
+                Gallery Views
+              </h3>
+              <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+                {[main_image, ...gallery_images].map((img, index) => {
+                  const isActive = img === currentMainImage;
+                  return (
+                    <div
+                      key={index}
+                      onClick={() => handleGalleryClick(img)}
+                      className="cursor-pointer"
+                    >
+                      <Zoom>
+                        <img
+                          src={img}
+                          alt={`${model_name}-thumb-${index}`}
+                          className={`object-cover w-full h-28 rounded-lg transition-all duration-300 hover:scale-[1.05] ${
+                            isActive
+                              ? "border-4 border-blue-500 shadow-blue-500/50"
+                              : "border-2 border-gray-700"
+                          }`}
+                        />
+                      </Zoom>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
         </div>
 
+        {/* Right Side Info */}
         <div className="space-y-4">
           <h2 className="pb-3 mb-2 text-2xl font-bold text-gray-100 border-b border-gray-700">
             Key Highlights
@@ -261,47 +296,34 @@ const CarDetails = () => {
               {renderRating(rating)}
             </div>
           </div>
+
+          {/* Seller Information */}
+          {buyer && (
+            <div className="p-4 mt-6 bg-gray-800 border border-gray-700 rounded-lg shadow-md">
+              <h3 className="flex items-center mb-3 text-lg font-bold text-blue-400">
+                <FaUserCircle className="w-5 h-5 mr-2 text-blue-400" />
+                Seller Information
+              </h3>
+              <div className="flex items-center gap-4">
+                <img
+                  src={
+                    buyer.photo ||
+                    "https://cdn-icons-png.flaticon.com/512/149/149071.png"
+                  }
+                  alt="Seller"
+                  className="object-cover w-16 h-16 border-2 border-blue-500 rounded-full"
+                />
+                <div>
+                  <p className="text-base font-semibold text-gray-100">
+                    {buyer.name || "Unknown Seller"}
+                  </p>
+                  <p className="text-sm text-gray-400">{buyer.email}</p>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
-
-      {/* Gallery Section */}
-      {gallery_images?.length > 0 && (
-        <div className="mt-10">
-          <h3 className="mb-4 text-2xl font-bold text-gray-100">
-            Gallery Views
-          </h3>
-          <div className="grid grid-cols-2 gap-4 md:grid-cols-6">
-            {[main_image, ...gallery_images.slice(0, 3)].map((img, index) => {
-              const isActive = img === currentMainImage;
-              return (
-                <div
-                  key={index}
-                  onClick={() => handleGalleryClick(img)}
-                  className="cursor-pointer"
-                >
-                  <Zoom>
-                    <img
-                      src={img}
-                      alt={`${model_name}-view-${index}`}
-                      className={`object-cover w-full h-32 transition-all duration-300 rounded-lg shadow-md hover:shadow-xl hover:scale-[1.03] ${
-                        isActive
-                          ? "border-4 border-blue-500 shadow-blue-500/50"
-                          : "border-2 border-gray-700"
-                      }`}
-                    />
-                  </Zoom>
-                </div>
-              );
-            })}
-            {/* Show +N more badge if extra images */}
-            {gallery_images.length > 3 && (
-              <div className="flex items-center justify-center text-sm font-semibold text-gray-400 bg-gray-800 border-2 border-gray-700 rounded-lg">
-                +{gallery_images.length - 3} more
-              </div>
-            )}
-          </div>
-        </div>
-      )}
 
       <hr className="my-12 border-gray-700" />
 
@@ -333,7 +355,6 @@ const CarDetails = () => {
               type="date"
               icon={FaCalendarAlt}
             />
-            <div></div>
           </div>
           <div className="flex flex-col space-y-2">
             <label

@@ -16,7 +16,7 @@ const AddCar = () => {
     "Hill Assist Control, Trailer Sway Control, Touchscreen Display, Rear Camera, 4WD"
   );
   const [galleryInputs, setGalleryInputs] = useState([0]); // Track dynamic fields
-  const [galleryImages, setGalleryImages] = useState([]); // Store uploaded/preview URLs
+  const [galleryImages, setGalleryImages] = useState([]); // Store URLs
   const [dateline, setDateline] = useState(null);
   const [uploading, setUploading] = useState(false);
 
@@ -50,15 +50,12 @@ const AddCar = () => {
     setGalleryInputs((prev) => [...prev, prev.length]);
   };
 
-  // 📸 Handle image selection for each field
-  const handleImageSelect = (e, index) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    const newURL = URL.createObjectURL(file);
-
+  // 🖼️ Handle URL input for gallery images
+  const handleGalleryURLChange = (e, index) => {
+    const url = e.target.value;
     setGalleryImages((prev) => {
       const updated = [...prev];
-      updated[index] = newURL;
+      updated[index] = url;
       return updated;
     });
   };
@@ -287,10 +284,10 @@ const AddCar = () => {
                 />
               </div>
 
-              {/* Dynamic Gallery Upload */}
+              {/* 🔗 Dynamic Gallery URL Input Section */}
               <div className="md:col-span-2">
                 <div className="flex items-center justify-between">
-                  <label className="text-gray-700">Gallery Images</label>
+                  <label className="text-gray-700">Gallery Image URLs</label>
                   <button
                     type="button"
                     onClick={handleAddInput}
@@ -307,10 +304,11 @@ const AddCar = () => {
                       className="flex items-center justify-between p-2 border border-gray-300 rounded-md"
                     >
                       <input
-                        type="file"
-                        accept="image/*"
-                        onChange={(e) => handleImageSelect(e, index)}
-                        className="flex-1 text-black cursor-pointer"
+                        type="url"
+                        placeholder="Paste image URL here"
+                        value={galleryImages[index] || ""}
+                        onChange={(e) => handleGalleryURLChange(e, index)}
+                        className="flex-1 px-3 py-2 text-black border rounded-md outline-none focus:border-blue-500"
                       />
                       {galleryImages[index] && (
                         <img

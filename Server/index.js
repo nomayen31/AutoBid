@@ -26,38 +26,62 @@ const client = new MongoClient(uri, {
 });
 async function run() {
   try {
-    const bidsCollection = client.db('autobid').collection('bids')
-    const allCollection = client.db('autobid').collection('allcars')
-    app.get('/cars', async(req, res)=>{
-        const result = await allCollection.find().toArray();
-        res.send(result)  
-    })
-    // get a single data 
-    app.get('/car/:id', async(req, res)=>{
+    const bidsCollection = client.db("autobid").collection("bids");
+    const allCollection = client.db("autobid").collection("allcars");
+    app.get("/cars", async (req, res) => {
+      const result = await allCollection.find().toArray();
+      res.send(result);
+    });
+    // get a single data
+    app.get("/car/:id", async (req, res) => {
       const id = req.params.id;
-      const query = {_id : new ObjectId(id)}
-      const result = await allCollection.findOne(query)
+      const query = { _id: new ObjectId(id) };
+      const result = await allCollection.findOne(query);
       // console.log(result);
-      res.send(result)
-    })
+      res.send(result);
+    });
 
     // save bits
 
-    app.post('/bid', async(req, res)=>{
+    app.post("/bid", async (req, res) => {
       const bidData = req.body;
       const result = await bidsCollection.insertOne(bidData);
-      res.send(result)
-    })
+      res.send(result);
+    });
 
     // save car
 
-    app.post('/car', async(req, res)=>{
+    app.post("/car", async (req, res) => {
       const carData = req.body;
       const result = await allCollection.insertOne(carData);
-      res.send(result)
-    })
-    
-    
+      res.send(result);
+    });
+
+    // get posted car
+    app.get("/cars/:email", async (req, res) => {
+      const email = req.params.email;
+      const query = { "buyer.email": email };
+      const result = await allCollection.find(query).toArray();
+      res.send(result);
+    });
+    // Delete  posted car
+    app.delete("/car/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await allCollection.deleteOne(query);
+      res.send(result);
+    });
+
+    // put
+    app.put("/car/:id", async (req, res) => {
+      const id = req.params.id;
+      const updatedCar = req.body;
+      const filter = { _id: new ObjectId(id) };
+      const updateDoc = { $set: updatedCar };
+
+      const result = await allCollection.updateOne(filter, updateDoc);
+      res.send(result);
+    });
 
     // Connect the client to the server	(optional starting in v4.7)
     // Send a ping to confirm a successful connection

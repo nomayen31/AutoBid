@@ -6,6 +6,8 @@ import Registration from "../Pages/Authentication/Registration";
 import CarDetails from "../Pages/CarDetails";
 import AddCar from "../Pages/AddCar";
 import ErrorPage from "../Pages/ErrorPage";
+import MyPostedCars from "../Pages/MyPostedCars";
+import UpdateCar from "../Pages/UpdateCar";
 
 const router = createBrowserRouter([
   {
@@ -33,6 +35,14 @@ const router = createBrowserRouter([
       {
         path:'/add-car',
         element:<AddCar/>
+      },
+      {
+        path:'/my-posted-cars',
+        element:<MyPostedCars/>
+      },
+      {
+        path:'/updateCar/:id',
+        element:<UpdateCar/>
       }
     ],
   },
