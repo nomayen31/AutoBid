@@ -26,7 +26,6 @@ const client = new MongoClient(uri, {
 });
 async function run() {
   try {
-    const carsCollection = client.db('autobid').collection('cars')
     const bidsCollection = client.db('autobid').collection('bids')
     const allCollection = client.db('autobid').collection('allcars')
     app.get('/cars', async(req, res)=>{
@@ -38,10 +37,28 @@ async function run() {
       const id = req.params.id;
       const query = {_id : new ObjectId(id)}
       const result = await allCollection.findOne(query)
-      console.log(result);
-      
+      // console.log(result);
       res.send(result)
     })
+
+    // save bits
+
+    app.post('/bid', async(req, res)=>{
+      const bidData = req.body;
+      const result = await bidsCollection.insertOne(bidData);
+      res.send(result)
+    })
+
+    // save car
+
+    app.post('/car', async(req, res)=>{
+      const carData = req.body;
+      const result = await allCollection.insertOne(carData);
+      res.send(result)
+    })
+    
+    
+
     // Connect the client to the server	(optional starting in v4.7)
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
