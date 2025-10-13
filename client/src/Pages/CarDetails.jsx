@@ -1,4 +1,4 @@
-import React, { useContext, useState, useRef } from "react";
+import React, { useContext, useState, useRef, useEffect } from "react";
 import { useLoaderData } from "react-router-dom";
 import Zoom from "react-medium-image-zoom";
 import "react-medium-image-zoom/dist/styles.css";
@@ -20,18 +20,40 @@ import {
 import { AuthContext } from "../Provider/AuthProvider";
 import axios from "axios";
 import toast from "react-hot-toast";
+import { motion } from "motion/react";
+import { gsap } from "gsap";
 
 const CarDetails = () => {
   const { user } = useContext(AuthContext);
   const car = useLoaderData();
+  const containerRef = useRef(null);
 
-  if (!car) {
+  // ✨ Animate page load
+  useEffect(() => {
+    const ctx = gsap.context(() => {
+      gsap.from(".fade-up", {
+        y: 40,
+        opacity: 0,
+        duration: 0.6,
+        ease: "power3.out",
+        stagger: 0.1,
+      });
+      gsap.from(".img-pop", {
+        scale: 0.9,
+        opacity: 0,
+        duration: 1,
+        ease: "power3.out",
+      });
+    }, containerRef);
+    return () => ctx.revert();
+  }, []);
+
+  if (!car)
     return (
-      <div className="min-h-screen py-20 text-2xl font-semibold text-center text-gray-300 bg-gray-900">
+      <div className="min-h-screen flex items-center justify-center text-2xl font-semibold text-gray-700 bg-white">
         No car data found 😔
       </div>
     );
-  }
 
   const {
     brand_name,
@@ -56,12 +78,8 @@ const CarDetails = () => {
   const formRef = useRef(null);
   const isAvailable = availability_status === "Available";
 
-  // Handle click on gallery image
-  const handleGalleryClick = (imageURL) => {
-    setCurrentMainImage(imageURL);
-  };
+  const handleGalleryClick = (imageURL) => setCurrentMainImage(imageURL);
 
-  // Handle bid placement
   const handlePlaceBid = async (e) => {
     e.preventDefault();
     if (user?.email === car?.buyer?.email)
@@ -70,11 +88,8 @@ const CarDetails = () => {
     const form = formRef.current;
     const price = parseFloat(form.price.value);
     const minPrice = parseFloat(price_range?.min_price || 0);
-
-    if (price < minPrice) {
-      toast.error(`Your bid must be at least $${minPrice.toLocaleString()}`);
-      return;
-    }
+    if (price < minPrice)
+      return toast.error(`Your bid must be at least $${minPrice}`);
 
     const bidData = {
       carId: _id,
@@ -87,53 +102,28 @@ const CarDetails = () => {
       brand_name,
       buyer_email: car?.buyer?.email,
     };
-
     try {
-      const { data } = await axios.post(
-        `${import.meta.env.VITE_API_URL}/bid`,
-        bidData
-      );
+      await axios.post(`${import.meta.env.VITE_API_URL}/bid`, bidData);
       toast.success("Bid placed successfully!");
-      console.log(data);
       form.reset();
-    } catch (err) {
-      console.error(err);
+    } catch {
       toast.error("Failed to place bid. Try again!");
     }
   };
 
-  // Render rating stars
-  const renderRating = (r) => {
-    const fullStars = Math.floor(r);
-    const hasHalfStar = r % 1 !== 0;
-    const emptyStars = 5 - fullStars - (hasHalfStar ? 1 : 0);
-
-    return (
-      <span className="flex items-center space-x-0.5 text-yellow-400">
-        {[...Array(fullStars)].map((_, i) => (
-          <FaStar key={`full-${i}`} className="w-4 h-4" />
-        ))}
-        {hasHalfStar && <span className="text-yellow-400">★½</span>}
-        {[...Array(emptyStars)].map((_, i) => (
-          <FaStar key={`empty-${i}`} className="w-4 h-4 text-gray-700" />
-        ))}
-        <span className="ml-2 font-semibold text-gray-200">{r}</span>
-      </span>
-    );
-  };
-
-  // InfoPill reusable component
   const InfoPill = ({ icon: Icon, title, value, className = "" }) => (
-    <div className="flex items-center p-3 bg-gray-800 rounded-lg shadow-sm">
+    <motion.div
+      whileHover={{ scale: 1.03 }}
+      className="flex items-center p-3 bg-gray-100 rounded-lg shadow-sm"
+    >
       <Icon className={`w-5 h-5 mr-3 ${className}`} />
       <div>
-        <span className="block text-sm font-medium text-gray-400">{title}</span>
-        <span className="text-lg font-semibold text-gray-50">{value}</span>
+        <span className="block text-sm font-medium text-gray-500">{title}</span>
+        <span className="text-lg font-semibold text-gray-800">{value}</span>
       </div>
-    </div>
+    </motion.div>
   );
 
-  // InputField reusable component
   const InputField = ({
     label,
     name,
@@ -146,9 +136,9 @@ const CarDetails = () => {
     <div className="flex flex-col space-y-2">
       <label
         htmlFor={name}
-        className="flex items-center text-sm font-medium text-gray-400"
+        className="flex items-center text-sm font-medium text-gray-600"
       >
-        {Icon && <Icon className="w-4 h-4 mr-2 text-blue-400" />}
+        {Icon && <Icon className="w-4 h-4 mr-2 text-blue-500" />}
         {label}
       </label>
       <input
@@ -158,150 +148,139 @@ const CarDetails = () => {
         defaultValue={value}
         readOnly={readOnly}
         placeholder={placeholder}
-        className={`w-full p-3 text-gray-100 bg-gray-700 border-2 rounded-lg focus:outline-none focus:border-blue-500 transition-colors duration-200 ${
-          readOnly
-            ? "opacity-70 cursor-not-allowed border-gray-600"
-            : "border-gray-700"
-        }`}
+        className={`w-full p-3 bg-white border rounded-lg focus:outline-none focus:border-blue-500 transition ${readOnly ? "bg-gray-100 text-gray-500" : "text-gray-800"
+          }`}
       />
     </div>
   );
 
   return (
-    <div className="container min-h-screen px-4 py-12 mx-auto max-w-7xl text-gray-50">
-      {/* Header Section */}
-      <div className="flex flex-col items-center justify-between mb-12 space-y-4 md:flex-row md:space-y-0">
-        <div className="text-center md:text-left">
-          <h1 className="text-5xl font-extrabold leading-tight text-white">
+    <div
+      ref={containerRef}
+      className="min-h-screen w-full bg-white text-gray-900 px-4 py-12 md:px-10"
+    >
+      {/* Header */}
+      <div className="fade-up flex flex-col md:flex-row justify-between items-center mb-10">
+        <div>
+          <h1 className="text-5xl font-extrabold text-gray-900">
             {model_name}
           </h1>
-          <p className="mt-2 text-xl text-gray-300">
-            <span className="font-bold text-blue-400">{brand_name}</span> (
+          <p className="mt-2 text-xl text-gray-700">
+            <span className="font-bold text-blue-600">{brand_name}</span> (
             {country}) —{" "}
-            <span className="font-medium text-purple-400">{category}</span>
+            <span className="font-semibold text-purple-600">{category}</span>
           </p>
-          <p className="mt-1 font-mono text-sm text-gray-500">Car ID: {_id}</p>
+          <p className="text-sm text-gray-400 mt-1">Car ID : {_id}</p>
         </div>
-        <div className="flex flex-col items-center space-y-2 md:items-end">
-          <p className="flex items-center text-3xl font-bold text-green-400">
-            <FaDollarSign className="w-6 h-6 mr-1" />
-            {price_range?.min_price?.toLocaleString()} -{" "}
+
+        <motion.div
+          whileHover={{ scale: 1.05 }}
+          className="mt-6 md:mt-0 text-center md:text-right"
+        >
+          <p className="text-3xl font-bold text-green-600 flex items-center justify-center md:justify-end">
+            <FaDollarSign className="mr-1" />
+            {price_range?.min_price?.toLocaleString()} –{" "}
             {price_range?.max_price?.toLocaleString()}
           </p>
-          <div
-            className={`px-4 py-1 text-sm font-bold rounded-full shadow-md ${
-              isAvailable
-                ? "bg-green-700 text-green-100"
-                : "bg-red-700 text-red-100"
-            } flex items-center`}
+          <span
+            className={`inline-flex items-center px-4 py-1 mt-2 rounded-full text-sm font-semibold ${isAvailable
+                ? "bg-green-100 text-green-700"
+                : "bg-red-100 text-red-600"
+              }`}
           >
             {isAvailable ? (
-              <FaCheckCircle className="w-4 h-4 mr-2" />
+              <FaCheckCircle className="mr-2" />
             ) : (
-              <FaTimesCircle className="w-4 h-4 mr-2" />
+              <FaTimesCircle className="mr-2" />
             )}
             {availability_status}
-          </div>
-        </div>
+          </span>
+        </motion.div>
       </div>
 
-      <hr className="my-8 border-gray-700" />
-
-      <div className="grid grid-cols-1 gap-12 lg:grid-cols-3">
-        {/* Main Image + Gallery Below */}
-        <div className="lg:col-span-2">
+      {/* Main content */}
+      <div className="grid lg:grid-cols-3 gap-10 mb-14">
+        {/* Main Image + Gallery */}
+        <div className="lg:col-span-2 space-y-6">
           <Zoom>
-            <img
+            <motion.img
               src={currentMainImage}
               alt={model_name}
-              className="object-cover w-full rounded-xl shadow-2xl transition-shadow duration-300 hover:shadow-3xl max-h-[600px]"
+              className="img-pop w-full rounded-xl shadow-lg"
+              whileHover={{ scale: 1.02 }}
             />
           </Zoom>
-
-          {/* Gallery Views directly below main image */}
           {gallery_images?.length > 0 && (
-            <div className="mt-6">
-              <h3 className="mb-3 text-xl font-semibold text-gray-100">
+            <div>
+              <h3 className="text-xl font-semibold text-gray-800 mb-3">
                 Gallery Views
               </h3>
-              <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-                {[main_image, ...gallery_images].map((img, index) => {
-                  const isActive = img === currentMainImage;
-                  return (
-                    <div
-                      key={index}
-                      onClick={() => handleGalleryClick(img)}
-                      className="cursor-pointer"
-                    >
-                      <Zoom>
-                        <img
-                          src={img}
-                          alt={`${model_name}-thumb-${index}`}
-                          className={`object-cover w-full h-28 rounded-lg transition-all duration-300 hover:scale-[1.05] ${
-                            isActive
-                              ? "border-4 border-blue-500 shadow-blue-500/50"
-                              : "border-2 border-gray-700"
-                          }`}
-                        />
-                      </Zoom>
-                    </div>
-                  );
-                })}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                {[main_image, ...gallery_images].map((img, i) => (
+                  <motion.img
+                    key={i}
+                    src={img}
+                    onClick={() => handleGalleryClick(img)}
+                    className={`cursor-pointer rounded-lg h-28 object-cover border-2 transition ${img === currentMainImage
+                        ? "border-blue-500"
+                        : "border-gray-200"
+                      }`}
+                    whileHover={{ scale: 1.05 }}
+                  />
+                ))}
               </div>
             </div>
           )}
         </div>
 
-        {/* Right Side Info */}
-        <div className="space-y-4">
-          <h2 className="pb-3 mb-2 text-2xl font-bold text-gray-100 border-b border-gray-700">
+        {/* Info */}
+        <div className="space-y-4 fade-up">
+          <h2 className="text-2xl font-bold text-gray-800 border-b pb-2">
             Key Highlights
           </h2>
           <InfoPill
             icon={FaTachometerAlt}
             title="Engine"
             value={engine_specs}
-            className="text-red-400"
+            className="text-red-500"
           />
           <InfoPill
             icon={FaCogs}
             title="Transmission"
             value={transmission}
-            className="text-indigo-400"
+            className="text-indigo-500"
           />
           <InfoPill
             icon={FaGasPump}
-            title="Fuel Type"
+            title="Fuel"
             value={fuel_type}
-            className="text-orange-400"
+            className="text-orange-500"
           />
           <InfoPill
             icon={FaTag}
             title="Category"
             value={category}
-            className="text-purple-400"
+            className="text-purple-500"
           />
           <InfoPill
             icon={FaGlobe}
             title="Country"
             value={country}
-            className="text-blue-400"
+            className="text-blue-500"
           />
-          <div className="flex items-center p-3 bg-gray-800 rounded-lg shadow-sm">
-            <FaStar className="w-5 h-5 mr-3 text-yellow-400" />
-            <div>
-              <span className="block text-sm font-medium text-gray-400">
-                Rating
-              </span>
-              {renderRating(rating)}
-            </div>
+          <div className="flex items-center p-3 bg-gray-100 rounded-lg shadow-sm">
+            <FaStar className="text-yellow-500 mr-2" />
+            <span className="font-semibold text-gray-800">{rating} / 5</span>
           </div>
 
-          {/* Seller Information */}
+          {/* Seller Info */}
           {buyer && (
-            <div className="p-4 mt-6 bg-gray-800 border border-gray-700 rounded-lg shadow-md">
-              <h3 className="flex items-center mb-3 text-lg font-bold text-blue-400">
-                <FaUserCircle className="w-5 h-5 mr-2 text-blue-400" />
+            <motion.div
+              className="p-4 mt-6 bg-gray-100 border border-gray-200 rounded-lg shadow-md"
+              whileHover={{ scale: 1.02 }}
+            >
+              <h3 className="flex items-center mb-3 text-lg font-bold text-blue-600">
+                <FaUserCircle className="w-5 h-5 mr-2 text-blue-500" />
                 Seller Information
               </h3>
               <div className="flex items-center gap-4">
@@ -311,42 +290,45 @@ const CarDetails = () => {
                     "https://cdn-icons-png.flaticon.com/512/149/149071.png"
                   }
                   alt="Seller"
-                  className="object-cover w-16 h-16 border-2 border-blue-500 rounded-full"
+                  className="object-cover w-16 h-16 border-2 border-blue-400 rounded-full"
                 />
                 <div>
-                  <p className="text-base font-semibold text-gray-100">
+                  <p className="text-base font-semibold text-gray-800">
                     {buyer.name || "Unknown Seller"}
                   </p>
-                  <p className="text-sm text-gray-400">{buyer.email}</p>
+                  <p className="text-sm text-gray-600">{buyer.email}</p>
                 </div>
               </div>
-            </div>
+            </motion.div>
           )}
         </div>
       </div>
 
-      <hr className="my-12 border-gray-700" />
-
-      {/* Place Bid Section */}
-      <div className="p-8 mb-12 bg-gray-800 border border-gray-700 shadow-xl rounded-xl">
-        <h2 className="pb-3 mb-6 text-3xl font-bold text-blue-400 border-b border-gray-700">
+      {/* Bid Form */}
+      <motion.div
+        className="p-8 bg-gray-50 border border-gray-200 rounded-2xl shadow-md mb-14"
+        initial={{ opacity: 0, y: 40 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6 }}
+      >
+        <h2 className="text-3xl font-bold text-blue-600 border-b pb-3 mb-6">
           Place a Bid 💰
         </h2>
         <form ref={formRef} onSubmit={handlePlaceBid} className="space-y-6">
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+          <div className="grid md:grid-cols-2 gap-6">
             <InputField
               label="Your Bid Price"
               name="price"
               type="number"
               icon={FaDollarSign}
-              placeholder={`Minimum price: ${price_range?.min_price?.toLocaleString()}`}
+              placeholder={`Min ${price_range?.min_price?.toLocaleString()}`}
             />
             <InputField
               label="Your Email"
               name="email"
               type="email"
               value={user?.email || ""}
-              readOnly={true}
+              readOnly
               icon={FaAt}
             />
             <InputField
@@ -356,54 +338,210 @@ const CarDetails = () => {
               icon={FaCalendarAlt}
             />
           </div>
-          <div className="flex flex-col space-y-2">
+          <div>
             <label
               htmlFor="comments"
-              className="flex items-center text-sm font-medium text-gray-400"
+              className="flex items-center text-sm font-medium text-gray-600 mb-2"
             >
-              <FaCommentDots className="w-4 h-4 mr-2 text-blue-400" />
-              Comments (Optional)
+              <FaCommentDots className="text-blue-500 mr-2" /> Comments (Optional)
             </label>
             <textarea
               id="comments"
               name="comments"
               rows="4"
+              className="w-full p-3 bg-white border rounded-lg focus:outline-none focus:border-blue-500 text-gray-800"
               placeholder="Any additional comments for your bid..."
-              className="w-full p-3 text-gray-100 transition-colors duration-200 bg-gray-700 border-2 border-gray-700 rounded-lg focus:outline-none focus:border-blue-500"
             ></textarea>
           </div>
-          <button
+          <motion.button
+            whileHover={{ scale: 1.03 }}
+            whileTap={{ scale: 0.98 }}
             type="submit"
-            className="w-full px-6 py-3 text-lg font-bold text-white uppercase transition duration-300 bg-blue-600 rounded-lg shadow-lg hover:bg-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-500 focus:ring-opacity-50 disabled:bg-gray-500"
+            className="w-full py-3 text-lg font-bold text-white bg-blue-600 rounded-lg shadow hover:bg-blue-700 transition"
           >
             Place Bid
-          </button>
+          </motion.button>
         </form>
-      </div>
-
-      <hr className="my-12 border-gray-700" />
+      </motion.div>
 
       {/* Description + Features */}
-      <div className="grid grid-cols-1 gap-10 md:grid-cols-3">
-        <div className="p-6 bg-gray-800 border border-gray-700 shadow-lg md:col-span-2 rounded-xl">
-          <h3 className="pb-2 mb-4 text-3xl font-bold text-gray-100 border-b border-gray-700">
+      <div className="grid md:grid-cols-3 gap-10">
+        <motion.div
+          className="md:col-span-2 p-6 bg-gray-50 border border-gray-200 rounded-2xl shadow"
+          initial={{ opacity: 0, y: 40 }}
+          whileInView={{ opacity: 1, y: 0 }}
+        >
+          <h3 className="text-2xl font-bold text-gray-800 border-b pb-2 mb-4">
             Description
           </h3>
-          <p className="text-lg leading-relaxed text-gray-300">{description}</p>
-        </div>
-        <div className="p-6 bg-gray-800 border border-gray-700 shadow-lg rounded-xl">
-          <h3 className="pb-2 mb-4 text-3xl font-bold text-gray-100 border-b border-gray-700">
+          <p className="text-gray-700 leading-relaxed">{description}</p>
+
+          {/* --- Detailed Car Overview --- */}
+          <div className="p-6 sm:p-10 grid grid-cols-1 lg:grid-cols-3 gap-8 text-gray-800 bg-gray-50 mt-8 rounded-xl">
+            {/* Column 1: Overview & Design */}
+            <section className="lg:col-span-2">
+              <h2 className="text-3xl font-bold text-blue-700 mb-4 border-l-4 border-blue-400 pl-4">
+                Vehicle Overview & Design
+              </h2>
+              <p className="mb-6 leading-relaxed text-lg">
+                This stunning <strong>{ brand_name}</strong> represents the
+                pinnacle of modern automotive engineering, blending breathtaking
+                aesthetics with uncompromising function.
+              </p>
+
+              <h3 className="text-xl font-semibold text-blue-600 mt-6 mb-3">
+                Key Design Highlights:
+              </h3>
+              <ul className="space-y-2 pl-5">
+                <li>
+                  <span className="text-blue-500 mr-2">•</span> Dynamic proportions with
+                  low-slung hood and wide track.
+                </li>
+                <li>
+                  <span className="text-blue-500 mr-2">•</span> Adaptive LED headlamps and
+                  signature DRLs.
+                </li>
+                <li>
+                  <span className="text-blue-500 mr-2">•</span> 20-inch diamond-cut alloy
+                  wheels.
+                </li>
+              </ul>
+            </section>
+
+            {/* Column 2: Quick Specs */}
+            <aside className="lg:col-span-1 bg-gray-200 p-6 rounded-xl shadow-lg">
+              <h2 className="text-2xl font-bold text-gray-800 mb-4">
+                Quick Specifications
+              </h2>
+              <div className="space-y-3">
+                <div className="flex justify-between border-b border-gray-300 pb-2">
+                  <span>Engine:</span>
+                  <span className="font-medium">2.0L Turbocharged I4</span>
+                </div>
+                <div className="flex justify-between border-b border-gray-300 pb-2">
+                  <span>Horsepower:</span>
+                  <span className="font-medium">300 hp</span>
+                </div>
+                <div className="flex justify-between border-b border-gray-300 pb-2">
+                  <span>Transmission:</span>
+                  <span className="font-medium">8-Speed DCT</span>
+                </div>
+                <div className="flex justify-between border-b border-gray-300 pb-2">
+                  <span>Mileage:</span>
+                  <span className="font-medium">28 MPG Combined</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Odometer:</span>
+                  <span className="font-medium">12,500 miles</span>
+                </div>
+              </div>
+            </aside>
+          </div>
+
+          {/* --- Performance Section --- */}
+          <section className="p-6 sm:p-10 bg-gray-100 border-t border-gray-200 mt-10 rounded-xl">
+            <h2 className="text-3xl font-bold text-gray-800 mb-6 flex items-center">
+              ⚡ Dynamic Performance
+            </h2>
+            <p className="leading-relaxed mb-4">
+              Performance is at the heart of the [Make] philosophy. The 2.0L engine
+              delivers exhilarating power with refined efficiency.
+            </p>
+            <div className="flex flex-wrap gap-3">
+              <span className="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-sm font-semibold">
+                Adaptive Suspension
+              </span>
+              <span className="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-sm font-semibold">
+                Selectable Drive Modes
+              </span>
+              <span className="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-sm font-semibold">
+                High-Performance Brakes
+              </span>
+            </div>
+          </section>
+
+          {/* --- Interior & Tech --- */}
+          <section className="p-6 sm:p-10 bg-gray-50 rounded-xl mt-10">
+            <h2 className="text-3xl font-bold text-gray-800 mb-6">🖥️ Luxury & Technology</h2>
+            <div className="grid md:grid-cols-2 gap-8 text-gray-700">
+              <div>
+                <h3 className="text-xl font-semibold mb-3">Refined Interior Comfort</h3>
+                <p className="mb-4">
+                  The cabin is a masterclass in craftsmanship, upholstered in Nappa
+                  leather with open-pore wood trim.
+                </p>
+                <ul className="list-disc pl-5 space-y-2">
+                  <li>Heated and Ventilated Sport Seats</li>
+                  <li>Panoramic Sunroof</li>
+                  <li>64-Color Ambient Lighting</li>
+                </ul>
+              </div>
+              <div>
+                <h3 className="text-xl font-semibold mb-3">Intuitive Connectivity</h3>
+                <p className="mb-4">
+                  Stay connected with a 12.3-inch digital cockpit and premium surround
+                  sound.
+                </p>
+                <ul className="list-disc pl-5 space-y-2">
+                  <li>Wireless Apple CarPlay® & Android Auto™</li>
+                  <li>Burmester 3D Surround Sound</li>
+                  <li>Smartphone Wireless Charging Pad</li>
+                </ul>
+              </div>
+            </div>
+          </section>
+
+          {/* --- Safety & History --- */}
+          <section className="p-6 sm:p-10 bg-gray-100 border-t border-gray-200 mt-10 rounded-xl">
+            <h2 className="text-3xl font-bold text-gray-800 mb-6">🛡️ Safety & Provenance</h2>
+            <div className="grid md:grid-cols-3 gap-8 text-gray-700">
+              <div>
+                <h3 className="text-xl font-semibold mb-3">Driver Assistance</h3>
+                <ul className="list-disc pl-5 space-y-2">
+                  <li>Blind Spot Assist</li>
+                  <li>Lane Keep Assist</li>
+                  <li>Active Distance Control</li>
+                </ul>
+              </div>
+              <div>
+                <h3 className="text-xl font-semibold mb-3">Vehicle History</h3>
+                <ul className="list-disc pl-5 space-y-2">
+                  <li>1-Owner Vehicle</li>
+                  <li>Clean CarFax Report</li>
+                  <li>Full Service History</li>
+                </ul>
+              </div>
+              <div>
+                <h3 className="text-xl font-semibold mb-3">Why This Car?</h3>
+                <p>
+                  This specific model includes the AMG Line Package, making it one of the
+                  most desirable configurations on the market.
+                </p>
+              </div>
+            </div>
+          </section>
+
+
+        </motion.div>
+
+        <motion.div
+          className="p-6 bg-gray-50 border border-gray-200 rounded-2xl shadow"
+          initial={{ opacity: 0, y: 40 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+        >
+          <h3 className="text-2xl font-bold text-gray-800 border-b pb-2 mb-4">
             Key Features
           </h3>
-          <ul className="pl-5 space-y-3 text-gray-300">
-            {features?.map((feature, i) => (
+          <ul className="space-y-3 text-gray-700">
+            {features?.map((f, i) => (
               <li key={i} className="flex items-start">
-                <FaCheckCircle className="flex-shrink-0 w-5 h-5 mt-1 mr-3 text-blue-400" />
-                <span className="font-medium">{feature}</span>
+                <FaCheckCircle className="text-blue-500 mt-1 mr-2" />
+                {f}
               </li>
             ))}
           </ul>
-        </div>
+        </motion.div>
       </div>
     </div>
   );

@@ -8,6 +8,7 @@ import AddCar from "../Pages/AddCar";
 import ErrorPage from "../Pages/ErrorPage";
 import MyPostedCars from "../Pages/MyPostedCars";
 import UpdateCar from "../Pages/UpdateCar";
+import Auctions from "../Pages/Auctions";
 
 const router = createBrowserRouter([
   {
@@ -43,6 +44,10 @@ const router = createBrowserRouter([
       {
         path:'/updateCar/:id',
         element:<UpdateCar/>
+      },
+      {
+        path:'/auctions',
+        element:<Auctions/>
       }
     ],
   },

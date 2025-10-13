@@ -1,6 +1,7 @@
 import React from 'react'
 import Carousel from '../Components/Carousel'
 import TabCategories from '../Components/TabCategories'
+import AuctionCountdown from '../Components/AuctionCountdown'
 
 const Home = () => {
  
@@ -9,6 +10,7 @@ const Home = () => {
     <div>
       <Carousel/>
       <TabCategories/>
+      <AuctionCountdown/>
     </div>
   )
 }
