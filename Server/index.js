@@ -82,16 +82,23 @@ async function run() {
       const result = await allCollection.updateOne(filter, updateDoc);
       res.send(result);
     });
-    // get all cars
-    app.get("/cars", async (req, res) => {
-      try {
-        const result = await allCollection.find().toArray();
-        res.send(result);
-      } catch (error) {
-        console.error("Error fetching all cars:", error);
-        res.status(500).send({ message: "Failed to fetch cars" });
-      }
+    // get all bids for user by email form DB
+    app.get("/my-bids/:email", async (req, res) => {
+      const email = req.params.email;
+      const query = { email };
+      const result = await bidsCollection.find(query).toArray();
+      res.send(result);
     });
+    // get all bids for Car Owner  by email form DB
+    app.get("/my-request/:email", async (req, res) => {
+      const email = req.params.email;
+      const query = { 'buyer.email':email };
+      const result = await bidsCollection.find(query).toArray();
+      res.send(result);
+    });
+    
+
+    
     // Connect the client to the server	(optional starting in v4.7)
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });

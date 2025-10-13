@@ -9,15 +9,17 @@ import ErrorPage from "../Pages/ErrorPage";
 import MyPostedCars from "../Pages/MyPostedCars";
 import UpdateCar from "../Pages/UpdateCar";
 import Auctions from "../Pages/Auctions";
+import PrivateRoutes from "./PrivateRoutes";
+import MyBids from "../Pages/MyBids";
 
 const router = createBrowserRouter([
   {
     path: "/",
     element: <MainLayout></MainLayout>,
-    errorElement:<ErrorPage/>,
+    errorElement: <ErrorPage />,
     children: [
       {
-        index: true, 
+        index: true,
         element: <Home />,
       },
       {
@@ -29,25 +31,48 @@ const router = createBrowserRouter([
         element: <Registration />,
       },
       {
-         path: "/car/:id",
-        element: <CarDetails/>,
-        loader:({params})=>fetch(`${import.meta.env.VITE_API_URL}/car/${params.id}`)
+        path: "/car/:id",
+        element: (
+          <PrivateRoutes>
+            <CarDetails />
+          </PrivateRoutes>
+        ),
+        loader: ({ params }) =>
+          fetch(`${import.meta.env.VITE_API_URL}/car/${params.id}`),
       },
       {
-        path:'/add-car',
-        element:<AddCar/>
+        path: "/add-car",
+        element: (
+          <PrivateRoutes>
+            <AddCar />,
+          </PrivateRoutes>
+        ),
       },
       {
-        path:'/my-posted-cars',
-        element:<MyPostedCars/>
+        path: "/my-posted-cars",
+        element: (
+          <PrivateRoutes>
+            <MyPostedCars />,
+          </PrivateRoutes>
+        ),
       },
       {
-        path:'/updateCar/:id',
-        element:<UpdateCar/>
+        path: "/updateCar/:id",
+        element: (
+          <PrivateRoutes>
+            <UpdateCar />,
+          </PrivateRoutes>
+        ),
       },
       {
-        path:'/auctions',
-        element:<Auctions/>
+        path: "/auctions",
+        element: <Auctions />,
+      },
+      {
+        path:'/my-bids',
+        element:<PrivateRoutes>
+          <MyBids/>
+        </PrivateRoutes>
       }
     ],
   },

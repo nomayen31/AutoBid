@@ -1,47 +1,59 @@
-import { useContext } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useContext, useEffect } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { AuthContext } from "../../Provider/AuthProvider";
 import toast, { Toaster } from "react-hot-toast";
 
 const Login = () => {
-  const { signIn, signInWithGoogle } = useContext(AuthContext);
+  const { signIn, signInWithGoogle, user, loading } = useContext(AuthContext);
+
+  // ✅ move navigate before useEffect
   const navigate = useNavigate();
-  // google sign in
+  const location = useLocation();
+  const from = location.state?.from?.pathname || "/";
+
+  // ✅ only one useEffect, with navigate defined before it
+  useEffect(() => {
+    if (user) {
+      navigate("/");
+    }
+  }, [navigate, user]);
+
   const handleGoogleSignIn = async () => {
     try {
       await signInWithGoogle();
-      toast.success("signin Successful");
-      navigate("/");
+      toast.success("Sign-in successful");
+      navigate(from, { replace: true });
     } catch (error) {
-      console.log(error);
+      console.error(error);
       toast.error(error.message);
     }
   };
-  // email password
+
   const handleSignIn = async (e) => {
     e.preventDefault();
     const form = e.target;
     const email = form.email.value;
     const pass = form.password.value;
-    console.log({ email, pass });
     try {
       const result = await signIn(email, pass);
       console.log(result);
-      toast.success("signin Successful");
-      navigate("/");
+      toast.success("Sign-in successful");
+      navigate(from, { replace: true });
     } catch (error) {
-      console.log(error);
+      console.error(error);
       toast.error(error?.message);
     }
   };
 
+  if (user || loading) return null;
+
   return (
     <div className="flex justify-center items-center min-h-[calc(100vh-306px)] my-12">
-      <div className="flex w-full max-w-sm mx-auto overflow-hidden bg-white rounded-lg shadow-lg lg:max-w-4xl ">
+      <div className="flex w-full max-w-sm mx-auto overflow-hidden bg-white rounded-lg shadow-lg lg:max-w-4xl">
         <div
           className="hidden bg-center bg-cover lg:block lg:w-1/2"
           style={{
-            backgroundImage: `url('https://images.unsplash.com/photo-1606660265514-358ebbadc80d?ixid=MXwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHw%3D&ixlib=rb-1.2.1&auto=format&fit=crop&w=1575&q=80')`,
+            backgroundImage: `url('https://images.unsplash.com/photo-1606660265514-358ebbadc80d?auto=format&fit=crop&w=1575&q=80')`,
           }}
         ></div>
 
@@ -90,13 +102,12 @@ const Login = () => {
 
           <div className="flex items-center justify-between mt-4">
             <span className="w-1/5 border-b lg:w-1/4"></span>
-
             <div className="text-xs text-center text-gray-500 uppercase hover:underline">
               or login with email
             </div>
-
             <span className="w-1/5 border-b dark:border-gray-400 lg:w-1/4"></span>
           </div>
+
           <form onSubmit={handleSignIn}>
             <div className="mt-4">
               <label
