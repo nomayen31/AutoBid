@@ -90,12 +90,12 @@ async function run() {
       res.send(result);
     });
     // get all bids for Car Owner  by email form DB
-    app.get("/my-request/:email", async (req, res) => {
-      const email = req.params.email;
-      const query = { 'buyer.email':email };
-      const result = await bidsCollection.find(query).toArray();
-      res.send(result);
-    });
+  app.get("/my-request/:email", async (req, res) => {
+  const email = req.params.email;
+  const query = { buyer: email }; 
+  const result = await bidsCollection.find(query).toArray();
+  res.send(result);
+});
     
 
     
