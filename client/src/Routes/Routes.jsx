@@ -39,8 +39,11 @@ const router = createBrowserRouter([
           </PrivateRoutes>
         ),
         loader: ({ params }) =>
-          fetch(`${import.meta.env.VITE_API_URL}/car/${params.id}`),
+          fetch(`${import.meta.env.VITE_API_URL}/car/${params.id}`, {
+            credentials: "include",
+          }),
       },
+
       {
         path: "/add-car",
         element: (
@@ -70,14 +73,14 @@ const router = createBrowserRouter([
         element: <Auctions />,
       },
       {
-        path:'/my-bids',
-        element:<PrivateRoutes>
-          <MyBids/>
+        path: '/my-bids',
+        element: <PrivateRoutes>
+          <MyBids />
         </PrivateRoutes>
       },
       {
-        path:'/bid-requests',
-        element:<BidRequests/>
+        path: '/bid-requests',
+        element: <BidRequests />
       }
     ],
   },
