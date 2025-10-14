@@ -2,16 +2,14 @@ import { useContext, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { AuthContext } from "../../Provider/AuthProvider";
 import toast, { Toaster } from "react-hot-toast";
+import axios from "axios";
 
 const Login = () => {
   const { signIn, signInWithGoogle, user, loading } = useContext(AuthContext);
-
-  // ✅ move navigate before useEffect
   const navigate = useNavigate();
   const location = useLocation();
   const from = location.state?.from?.pathname || "/";
 
-  // ✅ only one useEffect, with navigate defined before it
   useEffect(() => {
     if (user) {
       navigate("/");
@@ -20,7 +18,15 @@ const Login = () => {
 
   const handleGoogleSignIn = async () => {
     try {
-      await signInWithGoogle();
+      const result = await signInWithGoogle();
+      console.log(result.user);
+
+      const { data } = await axios.post(
+        `${import.meta.env.VITE_API_URL}/jwt`,
+        { email: result?.user?.email },
+        { withCredentials: true }
+      );
+      console.log(data);
       toast.success("Sign-in successful");
       navigate(from, { replace: true });
     } catch (error) {
@@ -28,6 +34,7 @@ const Login = () => {
       toast.error(error.message);
     }
   };
+
 
   const handleSignIn = async (e) => {
     e.preventDefault();

@@ -14,7 +14,9 @@ const MyPostedCars = () => {
   useEffect(() => {
     if (user?.email) {
       axios
-        .get(`${import.meta.env.VITE_API_URL}/cars/${user.email}`)
+        .get(`${import.meta.env.VITE_API_URL}/cars/${user.email}`,{
+          withCredentials:true
+        })
         .then((res) => {
           setCars(res.data);
         })

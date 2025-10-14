@@ -1,53 +1,79 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { AuthContext } from "../../Provider/AuthProvider";
 import { useContext, useEffect } from "react";
+import axios from "axios";
 import toast from "react-hot-toast";
 
 const Registration = () => {
-    const navigate = useNavigate();
-      const { signInWithGoogle, createUser, updateUserProfile, setUser, user, loading } =
-    useContext(AuthContext)
-      useEffect(() => {
-        if (user) {
-          navigate("/");
-        }
-      }, [navigate, user]);
-     const location = useLocation();
-  const from = location.state || '/';
-const handleSignUp = async e => {
-    e.preventDefault()
-    const form = e.target
-    const email = form.email.value
-    const name = form.name.value
-    const photo = form.photo.value
-    const pass = form.password.value
-    console.log({ email, pass, name, photo })
-    try {
-      //2. User Registration
-      const result = await createUser(email, pass)
-      console.log(result)
-      await updateUserProfile(name, photo)
-      setUser({ ...result.user, photoURL: photo, displayName: name })
-      toast.success('Signup Successful')
-      navigate(from, {replace:true});
-    } catch (err) {
-      console.log(err)
-      toast.error(err?.message)
+  const navigate = useNavigate();
+  const {
+    signInWithGoogle,
+    createUser,
+    updateUserProfile,
+    setUser,
+    user,
+    loading,
+  } = useContext(AuthContext);
+
+  useEffect(() => {
+    if (user) {
+      navigate("/");
     }
-  }
-    // Google Signin
+  }, [navigate, user]);
+
+  const location = useLocation();
+  const from = location.state || "/";
+
+  const handleSignUp = async (e) => {
+    e.preventDefault();
+    const form = e.target;
+    const email = form.email.value;
+    const name = form.name.value;
+    const photo = form.photo.value;
+    const pass = form.password.value;
+
+    try {
+      // Create user in Firebase
+      const result = await createUser(email, pass);
+      await updateUserProfile(name, photo);
+      setUser({ ...result.user, photoURL: photo, displayName: name });
+
+      // ✅ Request JWT token from backend
+      await axios.post(
+        `${import.meta.env.VITE_API_URL}/jwt`,
+        { email },
+        { withCredentials: true } // ✅ important for storing cookie
+      );
+
+      toast.success("Signup successful");
+      navigate(from, { replace: true });
+    } catch (err) {
+      console.error(err);
+      toast.error(err?.message);
+    }
+  };
+
+  // ✅ Google Sign-in with JWT
   const handleGoogleSignIn = async () => {
     try {
-      await signInWithGoogle()
+      const result = await signInWithGoogle();
 
-      toast.success('Signin Successful')
-      navigate(from, {replace:true});
+      await axios.post(
+        `${import.meta.env.VITE_API_URL}/jwt`,
+        { email: result?.user?.email },
+        { withCredentials: true } // ✅ store cookie
+      );
+
+      toast.success("Sign-in successful");
+      navigate(from, { replace: true });
     } catch (err) {
-      console.log(err)
-      toast.error(err?.message)
+      console.error(err);
+      toast.error(err?.message);
     }
-  }
+  };
+
   if (user || loading) return null;
+
   return (
     <div className="flex justify-center items-center min-h-[calc(100vh-306px)] my-12">
       <div className="flex w-full max-w-sm mx-auto overflow-hidden bg-white rounded-lg shadow-lg lg:max-w-4xl ">
@@ -64,7 +90,10 @@ const handleSignUp = async e => {
             Get Your Free Account Now.
           </p>
 
-          <div onClick={handleGoogleSignIn} className="flex items-center justify-center mt-4 text-gray-600 transition-colors duration-300 transform border rounded-lg cursor-pointer hover:bg-gray-50 ">
+          <div
+            onClick={handleGoogleSignIn}
+            className="flex items-center justify-center mt-4 text-gray-600 transition-colors duration-300 transform border rounded-lg cursor-pointer hover:bg-gray-50 "
+          >
             <div className="px-4 py-2">
               <svg className="w-6 h-6" viewBox="0 0 40 40">
                 <path
@@ -93,13 +122,12 @@ const handleSignUp = async e => {
 
           <div className="flex items-center justify-between mt-4">
             <span className="w-1/5 border-b lg:w-1/4"></span>
-
             <div className="text-xs text-center text-gray-500 uppercase hover:underline">
               or Registration with email
             </div>
-
-            <span className="w-1/5 border-b dark:border-gray-400 lg:w-1/4"></span>
+            <span className="w-1/5 border-b lg:w-1/4"></span>
           </div>
+
           <form onSubmit={handleSignUp}>
             <div className="mt-4">
               <label
@@ -148,15 +176,12 @@ const handleSignUp = async e => {
             </div>
 
             <div className="mt-4">
-              <div className="flex justify-between">
-                <label
-                  className="block mb-2 text-sm font-medium text-gray-600 "
-                  htmlFor="loggingPassword"
-                >
-                  Password
-                </label>
-              </div>
-
+              <label
+                className="block mb-2 text-sm font-medium text-gray-600 "
+                htmlFor="loggingPassword"
+              >
+                Password
+              </label>
               <input
                 id="loggingPassword"
                 autoComplete="current-password"
@@ -165,6 +190,7 @@ const handleSignUp = async e => {
                 type="password"
               />
             </div>
+
             <div className="mt-6">
               <button
                 type="submit"
@@ -177,17 +203,16 @@ const handleSignUp = async e => {
 
           <div className="flex items-center justify-between mt-4">
             <span className="w-1/5 border-b md:w-1/4"></span>
-
             <Link
               to="/login"
               className="text-xs text-gray-500 uppercase hover:underline"
             >
               or sign in
             </Link>
-
             <span className="w-1/5 border-b md:w-1/4"></span>
           </div>
         </div>
+
         <div
           className="hidden bg-center bg-cover lg:block lg:w-1/2"
           style={{

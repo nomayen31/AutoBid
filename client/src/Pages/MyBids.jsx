@@ -1,12 +1,13 @@
 import { useContext, useEffect, useState } from "react";
 import { AuthContext } from "../Provider/AuthProvider";
 import axios from "axios";
+import toast from "react-hot-toast";
 
 const MyBids = () => {
   const { user } = useContext(AuthContext);
   const [bids, setBids] = useState([]);
-  console.log(bids);
 
+  // Fetch bids placed by this user
   useEffect(() => {
     if (!user?.email) return;
 
@@ -23,6 +24,36 @@ const MyBids = () => {
 
     getData();
   }, [user]);
+
+  // ✅ Handle status change (Mark Complete)
+  const handleStatus = async (id, previousStatus, newStatus) => {
+    if (previousStatus === newStatus) {
+      toast.error("Already marked as completed!");
+      return;
+    }
+
+    try {
+      const { data } = await axios.patch(
+        `${import.meta.env.VITE_API_URL}/bid/${id}`,
+        { status: newStatus }
+      );
+
+      if (data.modifiedCount > 0 || data.acknowledged) {
+        // Update UI immediately
+        setBids((prev) =>
+          prev.map((bid) =>
+            bid._id === id ? { ...bid, status: newStatus } : bid
+          )
+        );
+        toast.success(`Bid marked as ${newStatus}`);
+      } else {
+        toast.error("No changes detected!");
+      }
+    } catch (error) {
+      console.error("Error updating status:", error);
+      toast.error("Failed to update bid status!");
+    }
+  };
 
   return (
     <section className="container px-6 py-12 mx-auto">
@@ -70,7 +101,7 @@ const MyBids = () => {
               </tr>
             ) : (
               bids.map((bid) => (
-                <tr key={bid.carId}>
+                <tr key={bid._id || bid.carId}>
                   <td className="px-4 py-4 text-sm text-gray-600">
                     {bid.model_name}
                   </td>
@@ -83,25 +114,27 @@ const MyBids = () => {
                   <td className="px-4 py-4 text-sm">
                     <span
                       className={`px-3 py-1 text-xs font-medium rounded-full
-      ${
-        bid.brand_name === "Toyota"
-          ? "bg-red-100 text-red-600"
-          : bid.brand_name === "BMW"
-          ? "bg-blue-100 text-blue-600"
-          : bid.brand_name === "Tesla"
-          ? "bg-gray-100 text-gray-700"
-          : bid.brand_name === "Mercedes-Benz"
-          ? "bg-purple-100 text-purple-600"
-          : bid.brand_name === "Ford"
-          ? "bg-green-100 text-green-600"
-          : bid.brand_name === "Hyundai"
-          ? "bg-yellow-100 text-yellow-600"
-          : "bg-gray-100 text-gray-500"
-      }`}
+                      ${
+                        bid.brand_name === "Toyota"
+                          ? "bg-red-100 text-red-600"
+                          : bid.brand_name === "BMW"
+                          ? "bg-blue-100 text-blue-600"
+                          : bid.brand_name === "Tesla"
+                          ? "bg-gray-100 text-gray-700"
+                          : bid.brand_name === "Mercedes-Benz"
+                          ? "bg-purple-100 text-purple-600"
+                          : bid.brand_name === "Ford"
+                          ? "bg-green-100 text-green-600"
+                          : bid.brand_name === "Hyundai"
+                          ? "bg-yellow-100 text-yellow-600"
+                          : "bg-gray-100 text-gray-500"
+                      }`}
                     >
                       {bid.brand_name}
                     </span>
                   </td>
+
+                  {/* Status Badge */}
                   <td className="px-4 py-4 text-sm font-medium text-gray-700">
                     <div
                       className={`inline-flex items-center px-3 py-1 rounded-full gap-x-2 ${
@@ -109,6 +142,10 @@ const MyBids = () => {
                           ? "text-yellow-500 bg-yellow-100"
                           : bid.status === "Approved"
                           ? "text-green-600 bg-green-100"
+                          : bid.status === "Completed"
+                          ? "text-blue-600 bg-blue-100"
+                          : bid.status === "Rejected"
+                          ? "text-red-600 bg-red-100"
                           : "text-gray-500 bg-gray-100"
                       }`}
                     >
@@ -118,16 +155,30 @@ const MyBids = () => {
                             ? "bg-yellow-500"
                             : bid.status === "Approved"
                             ? "bg-green-500"
+                            : bid.status === "Completed"
+                            ? "bg-blue-500"
+                            : bid.status === "Rejected"
+                            ? "bg-red-500"
                             : "bg-gray-400"
                         }`}
                       ></span>
                       <h2 className="text-sm font-normal">{bid.status}</h2>
                     </div>
                   </td>
+
+                  {/* Action Button */}
                   <td className="px-4 py-4 text-sm text-gray-600">
                     <button
                       title="Mark Complete"
-                      className="text-gray-500 transition-colors duration-200 hover:text-red-500 focus:outline-none disabled:cursor-not-allowed"
+                      onClick={() =>
+                        handleStatus(bid._id, bid.status, "Completed")
+                      }
+                      disabled={bid.status === "Completed"}
+                      className={`transition-colors duration-200 focus:outline-none ${
+                        bid.status === "Completed"
+                          ? "text-gray-400 cursor-not-allowed"
+                          : "text-gray-500 hover:text-blue-600"
+                      }`}
                     >
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
