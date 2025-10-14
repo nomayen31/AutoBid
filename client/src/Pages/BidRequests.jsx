@@ -1,11 +1,11 @@
 import { useContext, useEffect, useState } from "react";
 import { AuthContext } from "../Provider/AuthProvider";
 import axios from "axios";
+import toast from "react-hot-toast";
 
 const BidRequests = () => {
   const { user } = useContext(AuthContext);
   const [bids, setBids] = useState([]);
-  console.log("bids", bids);
 
   useEffect(() => {
     if (!user?.email) return;
@@ -20,9 +20,35 @@ const BidRequests = () => {
         console.error("Error fetching bids:", error);
       }
     };
-
     getData();
   }, [user]);
+  const handleStatus = async (id, previousStatus, newStatus) => {
+    if (previousStatus === newStatus) {
+      toast.error("Already in this status!");
+      return;
+    }
+    try {
+      const { data } = await axios.patch(
+        `${import.meta.env.VITE_API_URL}/bid/${id}`,
+        { status: newStatus }
+      );
+
+      if (data.modifiedCount > 0 || data.acknowledged) {
+        // update the UI instantly
+        setBids((prev) =>
+          prev.map((bid) =>
+            bid._id === id ? { ...bid, status: newStatus } : bid
+          )
+        );
+        toast.success(`Bid status updated to ${newStatus}`);
+      } else {
+        toast.error("No changes detected!");
+      }
+    } catch (error) {
+      console.error("Error updating status:", error);
+      toast.error("Failed to update status!");
+    }
+  };
 
   return (
     <section className="container px-4 pt-12 mx-auto">
@@ -81,13 +107,13 @@ const BidRequests = () => {
                           {bid.model_name}
                         </td>
                         <td className="px-4 py-4 text-sm text-gray-600">
-                          {bid.buyer || "N/A"}
+                          {bid.bidder_email || "N/A"}
                         </td>
                         <td className="px-4 py-4 text-sm text-gray-600">
                           {bid.dateline}
                         </td>
                         <td className="px-4 py-4 text-sm text-gray-600">
-                          ${bid.price}
+                          ${bid.bid_price}
                         </td>
                         <td className="px-4 py-4 text-sm">
                           <span
@@ -111,6 +137,8 @@ const BidRequests = () => {
                             {bid.brand_name}
                           </span>
                         </td>
+
+                        {/* Status Badge */}
                         <td className="px-4 py-4 text-sm font-medium text-gray-700">
                           <div
                             className={`inline-flex items-center px-3 py-1 rounded-full gap-x-2 ${
@@ -118,6 +146,8 @@ const BidRequests = () => {
                                 ? "text-yellow-500 bg-yellow-100"
                                 : bid.status === "Approved"
                                 ? "text-green-600 bg-green-100"
+                                : bid.status === "Rejected"
+                                ? "text-red-600 bg-red-100"
                                 : "text-gray-500 bg-gray-100"
                             }`}
                           >
@@ -127,6 +157,8 @@ const BidRequests = () => {
                                   ? "bg-yellow-500"
                                   : bid.status === "Approved"
                                   ? "bg-green-500"
+                                  : bid.status === "Rejected"
+                                  ? "bg-red-500"
                                   : "bg-gray-400"
                               }`}
                             ></span>
@@ -135,9 +167,14 @@ const BidRequests = () => {
                             </h2>
                           </div>
                         </td>
+
+                        {/* Action Buttons */}
                         <td className="px-4 py-4 text-sm whitespace-nowrap">
                           <div className="flex items-center gap-x-6">
                             <button
+                              onClick={() =>
+                                handleStatus(bid._id, bid.status, "Approved")
+                              }
                               className="text-gray-500 transition-colors duration-200 hover:text-green-500 focus:outline-none"
                               title="Approve Request"
                             >
@@ -158,6 +195,9 @@ const BidRequests = () => {
                             </button>
 
                             <button
+                              onClick={() =>
+                                handleStatus(bid._id, bid.status, "Rejected")
+                              }
                               className="text-gray-500 transition-colors duration-200 hover:text-red-500 focus:outline-none"
                               title="Reject Request"
                             >

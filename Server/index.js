@@ -82,23 +82,44 @@ async function run() {
       const result = await allCollection.updateOne(filter, updateDoc);
       res.send(result);
     });
-    // get all bids for user by email form DB
+    // ✅ Get all bids for a user (bids they placed)
     app.get("/my-bids/:email", async (req, res) => {
       const email = req.params.email;
-      const query = { email };
-      const result = await bidsCollection.find(query).toArray();
-      res.send(result);
+      try {
+        const query = { bidder_email: email }; // ✅ match bidder_email, not email
+        const result = await bidsCollection.find(query).toArray();
+        res.send(result);
+      } catch (error) {
+        console.error("Error fetching my bids:", error);
+        res.status(500).send({ message: "Failed to fetch bids" });
+      }
     });
-    // get all bids for Car Owner  by email form DB
-  app.get("/my-request/:email", async (req, res) => {
-  const email = req.params.email;
-  const query = { buyer: email }; 
-  const result = await bidsCollection.find(query).toArray();
-  res.send(result);
-});
-    
 
-    
+    // ✅ Get all bids for a car owner (bids placed on their cars)
+    app.get("/my-request/:email", async (req, res) => {
+      const email = req.params.email;
+      try {
+        const query = { seller_email: email }; // ✅ match seller_email, not buyer
+        const result = await bidsCollection.find(query).toArray();
+        res.send(result);
+      } catch (error) {
+        console.error("Error fetching owner bids:", error);
+        res.status(500).send({ message: "Failed to fetch bid requests" });
+      }
+    });
+
+    app.patch('/bid/:id',async(req, res)=>{
+      const id = req.params.id;
+      const status = req.body;
+      const query = {_id: new ObjectId(id)}
+      const updateDoc = {
+        $set:status,
+      }
+        const result =await bidsCollection.updateOne(query, updateDoc)
+        res.send(result)
+    })
+
+
     // Connect the client to the server	(optional starting in v4.7)
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });

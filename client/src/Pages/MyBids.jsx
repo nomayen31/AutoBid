@@ -78,7 +78,7 @@ const MyBids = () => {
                     {bid.dateline}
                   </td>
                   <td className="px-4 py-4 text-sm text-gray-600">
-                    ${bid.price}
+                    ${bid.bid_price}
                   </td>
                   <td className="px-4 py-4 text-sm">
                     <span

@@ -27,7 +27,7 @@ const CarDetails = () => {
   const { user } = useContext(AuthContext);
   const car = useLoaderData();
   const containerRef = useRef(null);
-  const navigate = useNavigate()
+  const navigate = useNavigate();
 
   // ✨ Animate page load
   useEffect(() => {
@@ -79,36 +79,42 @@ const CarDetails = () => {
   const formRef = useRef(null);
   const isAvailable = availability_status === "Available";
 
+  // 🖼️ Handle gallery image switch
   const handleGalleryClick = (imageURL) => setCurrentMainImage(imageURL);
 
+  // 💰 Handle Place Bid (with corrected field names)
   const handlePlaceBid = async (e) => {
     e.preventDefault();
-    if (user?.email === car?.buyer?.email)
-      return toast.error("Action Not Permitted");
+
+    if (user?.email === buyer?.email)
+      return toast.error("You cannot bid on your own car listing.");
 
     const form = formRef.current;
     const price = parseFloat(form.price.value);
     const minPrice = parseFloat(price_range?.min_price || 0);
+
     if (price < minPrice)
       return toast.error(`Your bid must be at least $${minPrice}`);
 
     const bidData = {
       carId: _id,
       model_name,
-      email: form.email.value,
-      price,
+      bid_price: price,
       dateline: form.dateline.value,
       comments: form.comments.value,
       status: "Pending",
       brand_name,
-      buyer: buyer?.email,
+      seller_email: buyer?.email,   // car owner
+      bidder_email: user?.email,    // logged-in user placing the bid
     };
+
     try {
       await axios.post(`${import.meta.env.VITE_API_URL}/bid`, bidData);
       toast.success("Bid placed successfully!");
       form.reset();
-      navigate('my-bids')
-    } catch {
+      navigate("/my-bids");
+    } catch (error) {
+      console.error("Bid submission error:", error);
       toast.error("Failed to place bid. Try again!");
     }
   };
@@ -150,8 +156,9 @@ const CarDetails = () => {
         defaultValue={value}
         readOnly={readOnly}
         placeholder={placeholder}
-        className={`w-full p-3 bg-white border rounded-lg focus:outline-none focus:border-blue-500 transition ${readOnly ? "bg-gray-100 text-gray-500" : "text-gray-800"
-          }`}
+        className={`w-full p-3 bg-white border rounded-lg focus:outline-none focus:border-blue-500 transition ${
+          readOnly ? "bg-gray-100 text-gray-500" : "text-gray-800"
+        }`}
       />
     </div>
   );
@@ -172,7 +179,7 @@ const CarDetails = () => {
             {country}) —{" "}
             <span className="font-semibold text-purple-600">{category}</span>
           </p>
-          <p className="mt-1 text-sm text-gray-400">Car ID : {_id}</p>
+          <p className="mt-1 text-sm text-gray-400">Car ID: {_id}</p>
         </div>
 
         <motion.div
@@ -185,10 +192,11 @@ const CarDetails = () => {
             {price_range?.max_price?.toLocaleString()}
           </p>
           <span
-            className={`inline-flex items-center px-4 py-1 mt-2 rounded-full text-sm font-semibold ${isAvailable
+            className={`inline-flex items-center px-4 py-1 mt-2 rounded-full text-sm font-semibold ${
+              isAvailable
                 ? "bg-green-100 text-green-700"
                 : "bg-red-100 text-red-600"
-              }`}
+            }`}
           >
             {isAvailable ? (
               <FaCheckCircle className="mr-2" />
@@ -223,10 +231,11 @@ const CarDetails = () => {
                     key={i}
                     src={img}
                     onClick={() => handleGalleryClick(img)}
-                    className={`cursor-pointer rounded-lg h-28 object-cover border-2 transition ${img === currentMainImage
+                    className={`cursor-pointer rounded-lg h-28 object-cover border-2 transition ${
+                      img === currentMainImage
                         ? "border-blue-500"
                         : "border-gray-200"
-                      }`}
+                    }`}
                     whileHover={{ scale: 1.05 }}
                   />
                 ))}
@@ -306,7 +315,7 @@ const CarDetails = () => {
         </div>
       </div>
 
-      {/* Bid Form */}
+      {/* 💸 Bid Form */}
       <motion.div
         className="p-8 border border-gray-200 shadow-md bg-gray-50 rounded-2xl mb-14"
         initial={{ opacity: 0, y: 40 }}
@@ -365,186 +374,6 @@ const CarDetails = () => {
           </motion.button>
         </form>
       </motion.div>
-
-      {/* Description + Features */}
-      <div className="grid gap-10 md:grid-cols-3">
-        <motion.div
-          className="p-6 border border-gray-200 shadow md:col-span-2 bg-gray-50 rounded-2xl"
-          initial={{ opacity: 0, y: 40 }}
-          whileInView={{ opacity: 1, y: 0 }}
-        >
-          <h3 className="pb-2 mb-4 text-2xl font-bold text-gray-800 border-b">
-            Description
-          </h3>
-          <p className="leading-relaxed text-gray-700">{description}</p>
-
-          {/* --- Detailed Car Overview --- */}
-          <div className="grid grid-cols-1 gap-8 p-6 mt-8 text-gray-800 sm:p-10 lg:grid-cols-3 bg-gray-50 rounded-xl">
-            {/* Column 1: Overview & Design */}
-            <section className="lg:col-span-2">
-              <h2 className="pl-4 mb-4 text-3xl font-bold text-blue-700 border-l-4 border-blue-400">
-                Vehicle Overview & Design
-              </h2>
-              <p className="mb-6 text-lg leading-relaxed">
-                This stunning <strong>{ brand_name}</strong> represents the
-                pinnacle of modern automotive engineering, blending breathtaking
-                aesthetics with uncompromising function.
-              </p>
-
-              <h3 className="mt-6 mb-3 text-xl font-semibold text-blue-600">
-                Key Design Highlights:
-              </h3>
-              <ul className="pl-5 space-y-2">
-                <li>
-                  <span className="mr-2 text-blue-500">•</span> Dynamic proportions with
-                  low-slung hood and wide track.
-                </li>
-                <li>
-                  <span className="mr-2 text-blue-500">•</span> Adaptive LED headlamps and
-                  signature DRLs.
-                </li>
-                <li>
-                  <span className="mr-2 text-blue-500">•</span> 20-inch diamond-cut alloy
-                  wheels.
-                </li>
-              </ul>
-            </section>
-
-            {/* Column 2: Quick Specs */}
-            <aside className="p-6 bg-gray-200 shadow-lg lg:col-span-1 rounded-xl">
-              <h2 className="mb-4 text-2xl font-bold text-gray-800">
-                Quick Specifications
-              </h2>
-              <div className="space-y-3">
-                <div className="flex justify-between pb-2 border-b border-gray-300">
-                  <span>Engine:</span>
-                  <span className="font-medium">2.0L Turbocharged I4</span>
-                </div>
-                <div className="flex justify-between pb-2 border-b border-gray-300">
-                  <span>Horsepower:</span>
-                  <span className="font-medium">300 hp</span>
-                </div>
-                <div className="flex justify-between pb-2 border-b border-gray-300">
-                  <span>Transmission:</span>
-                  <span className="font-medium">8-Speed DCT</span>
-                </div>
-                <div className="flex justify-between pb-2 border-b border-gray-300">
-                  <span>Mileage:</span>
-                  <span className="font-medium">28 MPG Combined</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Odometer:</span>
-                  <span className="font-medium">12,500 miles</span>
-                </div>
-              </div>
-            </aside>
-          </div>
-
-          {/* --- Performance Section --- */}
-          <section className="p-6 mt-10 bg-gray-100 border-t border-gray-200 sm:p-10 rounded-xl">
-            <h2 className="flex items-center mb-6 text-3xl font-bold text-gray-800">
-              ⚡ Dynamic Performance
-            </h2>
-            <p className="mb-4 leading-relaxed">
-              Performance is at the heart of the [Make] philosophy. The 2.0L engine
-              delivers exhilarating power with refined efficiency.
-            </p>
-            <div className="flex flex-wrap gap-3">
-              <span className="px-3 py-1 text-sm font-semibold text-blue-700 bg-blue-100 rounded-full">
-                Adaptive Suspension
-              </span>
-              <span className="px-3 py-1 text-sm font-semibold text-blue-700 bg-blue-100 rounded-full">
-                Selectable Drive Modes
-              </span>
-              <span className="px-3 py-1 text-sm font-semibold text-blue-700 bg-blue-100 rounded-full">
-                High-Performance Brakes
-              </span>
-            </div>
-          </section>
-
-          {/* --- Interior & Tech --- */}
-          <section className="p-6 mt-10 sm:p-10 bg-gray-50 rounded-xl">
-            <h2 className="mb-6 text-3xl font-bold text-gray-800">🖥️ Luxury & Technology</h2>
-            <div className="grid gap-8 text-gray-700 md:grid-cols-2">
-              <div>
-                <h3 className="mb-3 text-xl font-semibold">Refined Interior Comfort</h3>
-                <p className="mb-4">
-                  The cabin is a masterclass in craftsmanship, upholstered in Nappa
-                  leather with open-pore wood trim.
-                </p>
-                <ul className="pl-5 space-y-2 list-disc">
-                  <li>Heated and Ventilated Sport Seats</li>
-                  <li>Panoramic Sunroof</li>
-                  <li>64-Color Ambient Lighting</li>
-                </ul>
-              </div>
-              <div>
-                <h3 className="mb-3 text-xl font-semibold">Intuitive Connectivity</h3>
-                <p className="mb-4">
-                  Stay connected with a 12.3-inch digital cockpit and premium surround
-                  sound.
-                </p>
-                <ul className="pl-5 space-y-2 list-disc">
-                  <li>Wireless Apple CarPlay® & Android Auto™</li>
-                  <li>Burmester 3D Surround Sound</li>
-                  <li>Smartphone Wireless Charging Pad</li>
-                </ul>
-              </div>
-            </div>
-          </section>
-
-          {/* --- Safety & History --- */}
-          <section className="p-6 mt-10 bg-gray-100 border-t border-gray-200 sm:p-10 rounded-xl">
-            <h2 className="mb-6 text-3xl font-bold text-gray-800">🛡️ Safety & Provenance</h2>
-            <div className="grid gap-8 text-gray-700 md:grid-cols-3">
-              <div>
-                <h3 className="mb-3 text-xl font-semibold">Driver Assistance</h3>
-                <ul className="pl-5 space-y-2 list-disc">
-                  <li>Blind Spot Assist</li>
-                  <li>Lane Keep Assist</li>
-                  <li>Active Distance Control</li>
-                </ul>
-              </div>
-              <div>
-                <h3 className="mb-3 text-xl font-semibold">Vehicle History</h3>
-                <ul className="pl-5 space-y-2 list-disc">
-                  <li>1-Owner Vehicle</li>
-                  <li>Clean CarFax Report</li>
-                  <li>Full Service History</li>
-                </ul>
-              </div>
-              <div>
-                <h3 className="mb-3 text-xl font-semibold">Why This Car?</h3>
-                <p>
-                  This specific model includes the AMG Line Package, making it one of the
-                  most desirable configurations on the market.
-                </p>
-              </div>
-            </div>
-          </section>
-
-
-        </motion.div>
-
-        <motion.div
-          className="p-6 border border-gray-200 shadow bg-gray-50 rounded-2xl"
-          initial={{ opacity: 0, y: 40 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-        >
-          <h3 className="pb-2 mb-4 text-2xl font-bold text-gray-800 border-b">
-            Key Features
-          </h3>
-          <ul className="space-y-3 text-gray-700">
-            {features?.map((f, i) => (
-              <li key={i} className="flex items-start">
-                <FaCheckCircle className="mt-1 mr-2 text-blue-500" />
-                {f}
-              </li>
-            ))}
-          </ul>
-        </motion.div>
-      </div>
     </div>
   );
 };
