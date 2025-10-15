@@ -1,11 +1,14 @@
-import { useContext, useEffect, useState } from "react";
-import { AuthContext } from "../Provider/AuthProvider";
+import {  useEffect, useState } from "react";
 import axios from "axios";
 import toast from "react-hot-toast";
+import useAuth from "../hooks/useAuth";
+import {useQuery} from '@tanstack/react-query'
 
 const BidRequests = () => {
-  const { user } = useContext(AuthContext);
+  const { user } = useAuth()
   const [bids, setBids] = useState([]);
+
+  useQuery()
 
   useEffect(() => {
     if (!user?.email) return;

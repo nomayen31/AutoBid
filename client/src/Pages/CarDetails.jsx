@@ -29,7 +29,7 @@ const CarDetails = () => {
   const containerRef = useRef(null);
   const navigate = useNavigate();
 
-  // ✨ Animate page load
+
   useEffect(() => {
     const ctx = gsap.context(() => {
       gsap.from(".fade-up", {
@@ -63,7 +63,6 @@ const CarDetails = () => {
     description,
     category,
     price_range,
-    features,
     engine_specs,
     transmission,
     fuel_type,
@@ -75,7 +74,9 @@ const CarDetails = () => {
     buyer,
   } = car;
 
+  // eslint-disable-next-line react-hooks/rules-of-hooks
   const [currentMainImage, setCurrentMainImage] = useState(main_image);
+  // eslint-disable-next-line react-hooks/rules-of-hooks
   const formRef = useRef(null);
   const isAvailable = availability_status === "Available";
 

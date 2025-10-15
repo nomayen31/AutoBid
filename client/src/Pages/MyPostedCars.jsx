@@ -1,22 +1,21 @@
-import React, { useContext, useEffect, useState } from "react";
-import { AuthContext } from "../Provider/AuthProvider";
-import axios from "axios";
+import React, {  useEffect, useState } from "react";
 import { FaEdit, FaTrashAlt, FaCarSide } from "react-icons/fa";
 import toast from "react-hot-toast";
 import { Link } from "react-router-dom";
+import useAxiosSecure from "../hooks/useAxiosSecure";
+import useAuth from "../hooks/useAuth";
 
 const MyPostedCars = () => {
-  const { user } = useContext(AuthContext);
+  const { user } = useAuth()
   const [cars, setCars] = useState([]);
   const [loading, setLoading] = useState(true);
+  const axiosSecure = useAxiosSecure();
 
   // Fetch user's posted cars
   useEffect(() => {
     if (user?.email) {
-      axios
-        .get(`${import.meta.env.VITE_API_URL}/cars/${user.email}`,{
-          withCredentials:true
-        })
+      axiosSecure
+        .get(`/cars/${user?.email}`,{withCredentials:true})
         .then((res) => {
           setCars(res.data);
         })
@@ -26,13 +25,14 @@ const MyPostedCars = () => {
         })
         .finally(() => setLoading(false));
     }
-  }, [user?.email]);
+  }, [user?.email, axiosSecure]);
 
   // Delete car
   const handleDelete = async (id) => {
     if (!confirm("Are you sure you want to delete this car?")) return;
+
     try {
-      await axios.delete(`${import.meta.env.VITE_API_URL}/car/${id}`);
+      await axiosSecure.delete(`/car/${id}`);
       setCars((prev) => prev.filter((c) => c._id !== id));
       toast.success("Car deleted successfully!");
     } catch (err) {
@@ -43,14 +43,16 @@ const MyPostedCars = () => {
 
   return (
     <section className="container px-4 pt-12 mx-auto">
+      {/* Header */}
       <div className="flex items-center mb-6 gap-x-3">
         <FaCarSide className="text-2xl text-blue-600" />
-        <h2 className="text-lg font-semibold text-White">My Posted Cars</h2>
+        <h2 className="text-lg font-semibold text-white">My Posted Cars</h2>
         <span className="px-3 py-1 text-xs text-blue-600 bg-blue-100 rounded-full">
           {cars.length} Cars
         </span>
       </div>
 
+      {/* Loading and Empty States */}
       {loading ? (
         <p className="text-gray-500">Loading your cars...</p>
       ) : cars.length === 0 ? (
@@ -61,6 +63,7 @@ const MyPostedCars = () => {
             <div className="inline-block min-w-full py-2 align-middle md:px-6 lg:px-8">
               <div className="overflow-hidden border border-gray-200 shadow-lg md:rounded-lg">
                 <table className="min-w-full divide-y divide-gray-200">
+                  {/* Table Head */}
                   <thead className="bg-gray-50">
                     <tr>
                       <th className="px-4 py-3 text-sm font-semibold text-left text-gray-700">
@@ -87,10 +90,11 @@ const MyPostedCars = () => {
                     </tr>
                   </thead>
 
+                  {/* Table Body */}
                   <tbody className="bg-white divide-y divide-gray-200">
                     {cars.map((car) => (
                       <tr
-                        key={car._id}
+                        key={car._id || Math.random()}
                         className="transition-all hover:bg-gray-50"
                       >
                         {/* Title + Image */}
@@ -112,10 +116,10 @@ const MyPostedCars = () => {
 
                         {/* Deadline */}
                         <td className="px-4 py-4 text-sm text-gray-600 whitespace-nowrap">
-                          {new Date(car.dateline).toLocaleDateString("en-GB")}
+                          {new Date(car.deadline).toLocaleDateString("en-GB")}
                         </td>
 
-                        {/* Price */}
+                        {/* Price Range */}
                         <td className="px-4 py-4 text-sm text-gray-700 whitespace-nowrap">
                           ${car.price_range?.min_price?.toLocaleString()} - $
                           {car.price_range?.max_price?.toLocaleString()}
@@ -131,7 +135,9 @@ const MyPostedCars = () => {
                           className="max-w-xs px-4 py-4 text-sm text-gray-500 truncate"
                           title={car.description}
                         >
-                          {car.description?.slice(0, 70)}...
+                          {car.description?.length > 70
+                            ? `${car.description.slice(0, 70)}...`
+                            : car.description}
                         </td>
 
                         {/* Status */}

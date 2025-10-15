@@ -1,15 +1,15 @@
-import React, { useState, useContext } from "react";
+import React, { useState } from "react";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
-import { AuthContext } from "../Provider/AuthProvider";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import axios from "axios";
 import { FaPlus } from "react-icons/fa";
+import useAuth from "../hooks/useAuth";
 
 const AddCar = () => {
   const navigate = useNavigate();
-  const { user } = useContext(AuthContext);
+  const {user} = useAuth()
 
   const [rating, setRating] = useState(0);
   const [features, setFeatures] = useState(
