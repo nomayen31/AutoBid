@@ -12,7 +12,7 @@ const Navbar = () => {
         {/* Left: Brand */}
         <Link to="/" className="flex items-center gap-2">
           <span className="font-extrabold text-xl tracking-tight text-amber-400">
-            AutiBid
+            AutoBid
           </span>
         </Link>
 

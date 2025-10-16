@@ -53,6 +53,7 @@ async function run() {
     const bidsCollection = client.db("autobid").collection("bids");
     const allCollection = client.db("autobid").collection("allcars");
 
+    // ---------------- JWT Auth ----------------
     app.post("/jwt", async (req, res) => {
       try {
         const user = req.body;
@@ -69,9 +70,7 @@ async function run() {
           .send({ success: true });
       } catch (error) {
         console.error("JWT Error:", error);
-        res
-          .status(500)
-          .send({ success: false, message: "Failed to create token" });
+        res.status(500).send({ success: false, message: "Failed to create token" });
       }
     });
 
@@ -85,6 +84,57 @@ async function run() {
         .send({ success: true });
     });
 
+    // ---------------- All Cars (Sorted, Searchable, Paginated) ----------------
+    app.get("/all-cars", async (req, res) => {
+      const { filter, page = 0, size = 4, search, sort } = req.query;
+
+      let query = {};
+
+      if (filter) query.brand_name = filter;
+
+      if (search) {
+        query.$or = [
+          { model_name: { $regex: search, $options: "i" } },
+          { brand_name: { $regex: search, $options: "i" } },
+          { category: { $regex: search, $options: "i" } },
+        ];
+      }
+
+      // ✅ Sort by dateline (ascending/descending)
+      let sortOption = {};
+      if (sort === "asc") sortOption = { dateline: 1 }; // earliest first
+      else if (sort === "dsc") sortOption = { dateline: -1 }; // latest first
+
+      const result = await allCollection
+        .find(query)
+        .sort(sortOption)
+        .skip(parseInt(page) * parseInt(size))
+        .limit(parseInt(size))
+        .toArray();
+
+      res.send(result);
+    });
+
+    // ---------------- Count Cars ----------------
+    app.get("/cars-count", async (req, res) => {
+      const { brand, search } = req.query;
+      let query = {};
+
+      if (brand) query.brand_name = brand;
+
+      if (search) {
+        query.$or = [
+          { model_name: { $regex: search, $options: "i" } },
+          { brand_name: { $regex: search, $options: "i" } },
+          { category: { $regex: search, $options: "i" } },
+        ];
+      }
+
+      const count = await allCollection.countDocuments(query);
+      res.send({ count });
+    });
+
+    // ---------------- Other API Routes ----------------
     app.get("/cars", async (req, res) => {
       const result = await allCollection.find().toArray();
       res.send(result);
@@ -100,22 +150,6 @@ async function run() {
     app.post("/car", verifyToken, async (req, res) => {
       const carData = req.body;
       const result = await allCollection.insertOne(carData);
-      res.send(result);
-    });
-
-    app.post("/bid", verifyToken, async (req, res) => {
-      const bidData = req.body;
-      if (!bidData.bidder_email && bidData.email) {
-        bidData.bidder_email = bidData.email;
-      }
-      const result = await bidsCollection.insertOne(bidData);
-      res.send(result);
-    });
-
-    app.get("/cars/:email", verifyToken, async (req, res) => {
-      const email = req.params.email;
-      const query = { "buyer.email": email };
-      const result = await allCollection.find(query).toArray();
       res.send(result);
     });
 
@@ -135,28 +169,28 @@ async function run() {
       res.send(result);
     });
 
+    // ---------------- Bid APIs ----------------
+    app.post("/bid", verifyToken, async (req, res) => {
+      const bidData = req.body;
+      if (!bidData.bidder_email && bidData.email) {
+        bidData.bidder_email = bidData.email;
+      }
+      const result = await bidsCollection.insertOne(bidData);
+      res.send(result);
+    });
+
     app.get("/my-bids/:email", verifyToken, async (req, res) => {
       const email = req.params.email;
-      try {
-        const query = { $or: [{ bidder_email: email }, { email: email }] };
-        const result = await bidsCollection.find(query).toArray();
-        res.send(result);
-      } catch (error) {
-        console.error("Failed to fetch bids:", error);
-        res.status(500).send({ message: "Failed to fetch bids" });
-      }
+      const query = { $or: [{ bidder_email: email }, { email: email }] };
+      const result = await bidsCollection.find(query).toArray();
+      res.send(result);
     });
 
     app.get("/my-request/:email", verifyToken, async (req, res) => {
       const email = req.params.email;
-      try {
-        const query = { seller_email: email };
-        const result = await bidsCollection.find(query).toArray();
-        res.send(result);
-      } catch (error) {
-        console.error("Failed to fetch bid requests:", error);
-        res.status(500).send({ message: "Failed to fetch bid requests" });
-      }
+      const query = { seller_email: email };
+      const result = await bidsCollection.find(query).toArray();
+      res.send(result);
     });
 
     app.patch("/bid/:id", verifyToken, async (req, res) => {
@@ -167,26 +201,9 @@ async function run() {
       const result = await bidsCollection.updateOne(filter, updateDoc);
       res.send(result);
     });
-    // pagination
-    app.get("/all-cars", async (req, res) => {
-      const page = parseInt(req.query.page);
-      const size = parseInt(req.query.size);
-      const result = await allCollection
-        .find()
-        .skip(page * size)
-        .limit(size)
-        .toArray();
-      res.send(result);
-    });
-
-    // cars all data counts
-    app.get("/cars-count", async (req, res) => {
-      const count = await allCollection.countDocuments();
-      res.send({ count });
-    });
 
     await client.db("admin").command({ ping: 1 });
-    console.log(" MongoDB connection established successfully!");
+    console.log("✅ MongoDB connection established successfully!");
   } catch (err) {
     console.error("MongoDB Error:", err);
   }
@@ -195,7 +212,7 @@ async function run() {
 run().catch(console.dir);
 
 app.get("/", (req, res) => {
-  res.send(" Welcome to AutoBid API — Secure JWT Server Running.");
+  res.send("Welcome to AutoBid API — Secure JWT Server Running.");
 });
 
 app.listen(port, () => {
