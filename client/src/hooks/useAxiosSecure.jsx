@@ -17,14 +17,13 @@ const useAxiosSecure = () => {
   useEffect(() => {
     // Add a response interceptor
     const interceptor = axiosSecure.interceptors.response.use(
-      (response) => response, // ✅ If response is successful, just return it
+      (response) => response, 
       async (error) => {
         const status = error?.response?.status;
 
-        // ❌ Unauthorized or Forbidden
         if (status === 401 || status === 403) {
-          await logout(); // call logout from your AuthProvider
-          navigate("/login"); // redirect to login page
+          await logout(); 
+          navigate("/login"); 
         }
 
         // Always reject the error so the caller can still catch it

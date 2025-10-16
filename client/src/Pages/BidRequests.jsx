@@ -1,49 +1,42 @@
-import {  useEffect, useState } from "react";
-import axios from "axios";
+import { useQuery } from "@tanstack/react-query";
 import toast from "react-hot-toast";
 import useAuth from "../hooks/useAuth";
-import {useQuery} from '@tanstack/react-query'
+import useAxiosSecure from "../hooks/useAxiosSecure";
 
 const BidRequests = () => {
-  const { user } = useAuth()
-  const [bids, setBids] = useState([]);
+  const { user } = useAuth();
+  const axiosSecure = useAxiosSecure();
 
-  useQuery()
+  const {
+    data: bids = [],
+    isLoading,
+    isError,
+    error,
+    refetch,
+  } = useQuery({
+    queryKey: ["my-requests", user?.email],
+    enabled: !!user?.email, // wait until email is available
+    queryFn: async () => {
+      const { data } = await axiosSecure.get(`/my-request/${user.email}`);
+      return data || [];
+    },
+    staleTime: 60000, 
+  });
 
-  useEffect(() => {
-    if (!user?.email) return;
-
-    const getData = async () => {
-      try {
-        const { data } = await axios.get(
-          `${import.meta.env.VITE_API_URL}/my-request/${user.email}`
-        );
-        setBids(data);
-      } catch (error) {
-        console.error("Error fetching bids:", error);
-      }
-    };
-    getData();
-  }, [user]);
   const handleStatus = async (id, previousStatus, newStatus) => {
     if (previousStatus === newStatus) {
       toast.error("Already in this status!");
       return;
     }
+
     try {
-      const { data } = await axios.patch(
-        `${import.meta.env.VITE_API_URL}/bid/${id}`,
-        { status: newStatus }
-      );
+      const { data } = await axiosSecure.patch(`/bid/${id}`, {
+        status: newStatus,
+      });
 
       if (data.modifiedCount > 0 || data.acknowledged) {
-        // update the UI instantly
-        setBids((prev) =>
-          prev.map((bid) =>
-            bid._id === id ? { ...bid, status: newStatus } : bid
-          )
-        );
         toast.success(`Bid status updated to ${newStatus}`);
+        refetch(); 
       } else {
         toast.error("No changes detected!");
       }
@@ -52,6 +45,18 @@ const BidRequests = () => {
       toast.error("Failed to update status!");
     }
   };
+
+  if (isLoading)
+    return (
+      <div className="mt-10 text-center text-gray-500">Loading requests...</div>
+    );
+
+  if (isError)
+    return (
+      <div className="mt-10 text-center text-red-500">
+        Failed to load bid requests: {error.message}
+      </div>
+    );
 
   return (
     <section className="container px-4 pt-12 mx-auto">

@@ -3,20 +3,21 @@ import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
-import axios from "axios";
 import { FaPlus } from "react-icons/fa";
 import useAuth from "../hooks/useAuth";
+import useAxiosSecure from "../hooks/useAxiosSecure"; // ✅ Added secure axios instance
 
 const AddCar = () => {
   const navigate = useNavigate();
-  const {user} = useAuth()
+  const { user } = useAuth();
+  const axiosSecure = useAxiosSecure(); // ✅ use secure axios (includes JWT token)
 
   const [rating, setRating] = useState(0);
   const [features, setFeatures] = useState(
     "Hill Assist Control, Trailer Sway Control, Touchscreen Display, Rear Camera, 4WD"
   );
-  const [galleryInputs, setGalleryInputs] = useState([0]); // Track dynamic fields
-  const [galleryImages, setGalleryImages] = useState([]); // Store URLs
+  const [galleryInputs, setGalleryInputs] = useState([0]);
+  const [galleryImages, setGalleryImages] = useState([]);
   const [dateline, setDateline] = useState(null);
   const [uploading, setUploading] = useState(false);
 
@@ -45,12 +46,10 @@ const AddCar = () => {
     "4.0L V8 Petrol",
   ];
 
-  // ➕ Add new gallery image input field
   const handleAddInput = () => {
     setGalleryInputs((prev) => [...prev, prev.length]);
   };
 
-  // 🖼️ Handle URL input for gallery images
   const handleGalleryURLChange = (e, index) => {
     const url = e.target.value;
     setGalleryImages((prev) => {
@@ -63,6 +62,12 @@ const AddCar = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     const form = e.target;
+
+    if (!form.brand_name.value || !form.model_name.value || !dateline) {
+      toast.error("Please fill all required fields!");
+      return;
+    }
+
     const featuresArray = features
       .split(",")
       .map((f) => f.trim())
@@ -95,16 +100,23 @@ const AddCar = () => {
     };
 
     try {
-      const { data } = await axios.post(
-        `${import.meta.env.VITE_API_URL}/car`,
-        carData
-      );
-      console.log(data);
-      toast.success("Car added successfully!");
-      navigate("/my-posted-cars");
+      setUploading(true);
+      console.log("Car data being sent:", carData);
+
+      // ✅ Secure request with token
+      const { data } = await axiosSecure.post("/car", carData);
+
+      if (data.insertedId || data.acknowledged) {
+        toast.success("Car added successfully!");
+        navigate("/my-posted-cars");
+      } else {
+        toast.error("Something went wrong. Please try again!");
+      }
     } catch (err) {
-      console.error(err);
+      console.error("Car submission error:", err);
       toast.error("Failed to add car. Please try again!");
+    } finally {
+      setUploading(false);
     }
   };
 
@@ -284,7 +296,6 @@ const AddCar = () => {
                 />
               </div>
 
-              {/* 🔗 Dynamic Gallery URL Input Section */}
               <div className="md:col-span-2">
                 <div className="flex items-center justify-between">
                   <label className="text-gray-700">Gallery Image URLs</label>

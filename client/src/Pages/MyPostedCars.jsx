@@ -46,7 +46,7 @@ const MyPostedCars = () => {
       {/* Header */}
       <div className="flex items-center mb-6 gap-x-3">
         <FaCarSide className="text-2xl text-blue-600" />
-        <h2 className="text-lg font-semibold text-white">My Posted Cars</h2>
+        <h2 className="text-lg font-semibold text-black">My Posted Cars</h2>
         <span className="px-3 py-1 text-xs text-blue-600 bg-blue-100 rounded-full">
           {cars.length} Cars
         </span>

@@ -12,6 +12,7 @@ import Auctions from "../Pages/Auctions";
 import PrivateRoutes from "./PrivateRoutes";
 import MyBids from "../Pages/MyBids";
 import BidRequests from "../Pages/BidRequests";
+import AllCars from "../Pages/AllCars";
 
 const router = createBrowserRouter([
   {
@@ -81,6 +82,11 @@ const router = createBrowserRouter([
       {
         path: '/bid-requests',
         element: <BidRequests />
+      }
+      ,
+      {
+        path: '/all-cars',
+        element: <AllCars/>
       }
     ],
   },

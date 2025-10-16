@@ -14,9 +14,6 @@ const Navbar = () => {
           <span className="font-extrabold text-xl tracking-tight text-amber-400">
             AutiBid
           </span>
-          <span className="text-sm text-gray-300 font-medium">
-            • Reseller & Auction Hub
-          </span>
         </Link>
 
         {/* Right: Menu */}
@@ -29,7 +26,7 @@ const Navbar = () => {
             Home
           </Link>
           <Link
-            to="/jobs"
+            to="/all-cars"
             className="text-sm font-medium text-gray-200 hover:text-amber-400 transition"
           >
             All Cars
@@ -39,12 +36,6 @@ const Navbar = () => {
             className="text-sm font-medium text-gray-200 hover:text-amber-400 transition"
           >
             Live Auctions
-          </Link>
-          <Link
-            to="/sell"
-            className="text-sm font-medium text-gray-200 hover:text-amber-400 transition"
-          >
-            Sell Your Car
           </Link>
 
           {/* Login Button */}

@@ -1,5 +1,5 @@
 import React, { useContext, useState, useRef, useEffect } from "react";
-import { useLoaderData, useNavigate } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import Zoom from "react-medium-image-zoom";
 import "react-medium-image-zoom/dist/styles.css";
 import {
@@ -18,22 +18,45 @@ import {
   FaUserCircle,
 } from "react-icons/fa";
 import { AuthContext } from "../Provider/AuthProvider";
-import axios from "axios";
 import toast from "react-hot-toast";
 import { motion } from "motion/react";
 import { gsap } from "gsap";
+import useAxiosSecure from "../hooks/useAxiosSecure";
 
 const CarDetails = () => {
+  const { id } = useParams();
   const { user } = useContext(AuthContext);
-  const car = useLoaderData();
   const containerRef = useRef(null);
   const navigate = useNavigate();
+  const axiosSecure = useAxiosSecure();
 
+  const [car, setCar] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [currentMainImage, setCurrentMainImage] = useState("");
+  const formRef = useRef(null);
 
+  // ✅ Fetch car securely with token
+  useEffect(() => {
+    const fetchCar = async () => {
+      try {
+        const { data } = await axiosSecure.get(`/car/${id}`);
+        setCar(data);
+        setCurrentMainImage(data.main_image);
+      } catch (error) {
+        console.error("Failed to load car:", error);
+        toast.error("Failed to load car details");
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchCar();
+  }, [id, axiosSecure]);
+
+  // ✅ Entry animations
   useEffect(() => {
     const ctx = gsap.context(() => {
       gsap.from(".fade-up", {
-        y: 40,
+        y: 30,
         opacity: 0,
         duration: 0.6,
         ease: "power3.out",
@@ -49,10 +72,17 @@ const CarDetails = () => {
     return () => ctx.revert();
   }, []);
 
+  if (loading)
+    return (
+      <div className="flex items-center justify-center min-h-screen text-xl text-gray-600">
+        Loading car details...
+      </div>
+    );
+
   if (!car)
     return (
-      <div className="flex items-center justify-center min-h-screen text-2xl font-semibold text-gray-700 bg-white">
-        No car data found 😔
+      <div className="flex items-center justify-center min-h-screen text-2xl font-semibold text-gray-700">
+        Car not found 😔
       </div>
     );
 
@@ -68,25 +98,21 @@ const CarDetails = () => {
     fuel_type,
     rating,
     main_image,
-    gallery_images,
+    gallery_images = [],
+    features = [],
     availability_status,
+    dateline,
     _id,
     buyer,
   } = car;
 
-  // eslint-disable-next-line react-hooks/rules-of-hooks
-  const [currentMainImage, setCurrentMainImage] = useState(main_image);
-  // eslint-disable-next-line react-hooks/rules-of-hooks
-  const formRef = useRef(null);
   const isAvailable = availability_status === "Available";
+  const handleGalleryClick = (url) => setCurrentMainImage(url);
 
-  // 🖼️ Handle gallery image switch
-  const handleGalleryClick = (imageURL) => setCurrentMainImage(imageURL);
-
-  // 💰 Handle Place Bid (with corrected field names)
+  // ✅ Secure Bid Submission
   const handlePlaceBid = async (e) => {
     e.preventDefault();
-
+    if (!user) return toast.error("You must be logged in to place a bid.");
     if (user?.email === buyer?.email)
       return toast.error("You cannot bid on your own car listing.");
 
@@ -100,23 +126,24 @@ const CarDetails = () => {
     const bidData = {
       carId: _id,
       model_name,
+      brand_name,
       bid_price: price,
       dateline: form.dateline.value,
       comments: form.comments.value,
       status: "Pending",
-      brand_name,
-      seller_email: buyer?.email,   // car owner
-      bidder_email: user?.email,    // logged-in user placing the bid
+      seller_email: buyer?.email,
+      bidder_email: user?.email,
     };
 
     try {
-      await axios.post(`${import.meta.env.VITE_API_URL}/bid`, bidData);
-      toast.success("Bid placed successfully!");
-      form.reset();
-      navigate("/my-bids");
-    } catch (error) {
-      console.error("Bid submission error:", error);
-      toast.error("Failed to place bid. Try again!");
+      const { data } = await axiosSecure.post("/bid", bidData);
+      if (data.insertedId || data.acknowledged) {
+        toast.success("Bid placed successfully!");
+        navigate("/my-bids");
+      } else toast.error("Something went wrong. Try again!");
+    } catch (err) {
+      console.error("Bid submission error:", err);
+      toast.error("Failed to place bid!");
     }
   };
 
@@ -127,7 +154,9 @@ const CarDetails = () => {
     >
       <Icon className={`w-5 h-5 mr-3 ${className}`} />
       <div>
-        <span className="block text-sm font-medium text-gray-500">{title}</span>
+        <span className="block text-sm font-medium text-gray-500">
+          {title}
+        </span>
         <span className="text-lg font-semibold text-gray-800">{value}</span>
       </div>
     </motion.div>
@@ -183,10 +212,7 @@ const CarDetails = () => {
           <p className="mt-1 text-sm text-gray-400">Car ID: {_id}</p>
         </div>
 
-        <motion.div
-          whileHover={{ scale: 1.05 }}
-          className="mt-6 text-center md:mt-0 md:text-right"
-        >
+        <motion.div whileHover={{ scale: 1.05 }} className="mt-6 md:mt-0">
           <p className="flex items-center justify-center text-3xl font-bold text-green-600 md:justify-end">
             <FaDollarSign className="mr-1" />
             {price_range?.min_price?.toLocaleString()} –{" "}
@@ -209,9 +235,8 @@ const CarDetails = () => {
         </motion.div>
       </div>
 
-      {/* Main content */}
-      <div className="grid gap-10 lg:grid-cols-3 mb-14">
-        {/* Main Image + Gallery */}
+      {/* Images & Specs */}
+      <div className="grid gap-10 mb-14 lg:grid-cols-3">
         <div className="space-y-6 lg:col-span-2">
           <Zoom>
             <motion.img
@@ -221,7 +246,7 @@ const CarDetails = () => {
               whileHover={{ scale: 1.02 }}
             />
           </Zoom>
-          {gallery_images?.length > 0 && (
+          {gallery_images.length > 0 && (
             <div>
               <h3 className="mb-3 text-xl font-semibold text-gray-800">
                 Gallery Views
@@ -243,49 +268,50 @@ const CarDetails = () => {
               </div>
             </div>
           )}
-        </div>
 
-        {/* Info */}
-        <div className="space-y-4 fade-up">
-          <h2 className="pb-2 text-2xl font-bold text-gray-800 border-b">
-            Key Highlights
-          </h2>
-          <InfoPill
-            icon={FaTachometerAlt}
-            title="Engine"
-            value={engine_specs}
-            className="text-red-500"
-          />
-          <InfoPill
-            icon={FaCogs}
-            title="Transmission"
-            value={transmission}
-            className="text-indigo-500"
-          />
-          <InfoPill
-            icon={FaGasPump}
-            title="Fuel"
-            value={fuel_type}
-            className="text-orange-500"
-          />
-          <InfoPill
-            icon={FaTag}
-            title="Category"
-            value={category}
-            className="text-purple-500"
-          />
-          <InfoPill
-            icon={FaGlobe}
-            title="Country"
-            value={country}
-            className="text-blue-500"
-          />
-          <div className="flex items-center p-3 bg-gray-100 rounded-lg shadow-sm">
-            <FaStar className="mr-2 text-yellow-500" />
-            <span className="font-semibold text-gray-800">{rating} / 5</span>
+          {/* ✅ Full Description Section */}
+          <div className="p-6 mt-6 border border-gray-200 rounded-lg bg-gray-50">
+            <h3 className="mb-2 text-2xl font-bold text-gray-800">
+              Description
+            </h3>
+            <p className="leading-relaxed text-gray-700">{description}</p>
           </div>
 
-          {/* Seller Info */}
+          {/* ✅ Features List */}
+          {features.length > 0 && (
+            <div className="p-6 mt-6 border border-gray-200 rounded-lg bg-gray-50">
+              <h3 className="mb-3 text-2xl font-bold text-gray-800">
+                Key Features
+              </h3>
+              <ul className="grid grid-cols-1 gap-2 md:grid-cols-2">
+                {features.map((f, i) => (
+                  <li key={i} className="flex items-center text-gray-700">
+                    <FaCheckCircle className="mr-2 text-green-500" />
+                    {f}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
+
+        {/* Right column info */}
+        <div className="space-y-4 fade-up">
+          <h2 className="pb-2 text-2xl font-bold text-gray-800 border-b">
+            Specifications
+          </h2>
+          <InfoPill icon={FaTachometerAlt} title="Engine" value={engine_specs} />
+          <InfoPill icon={FaCogs} title="Transmission" value={transmission} />
+          <InfoPill icon={FaGasPump} title="Fuel" value={fuel_type} />
+          <InfoPill icon={FaTag} title="Category" value={category} />
+          <InfoPill icon={FaGlobe} title="Country" value={country} />
+          <div className="flex items-center p-3 bg-gray-100 rounded-lg shadow-sm">
+            <FaStar className="mr-2 text-yellow-500" />
+            <span className="font-semibold text-gray-800">
+              {rating || "N/A"} / 5
+            </span>
+          </div>
+
           {buyer && (
             <motion.div
               className="p-4 mt-6 bg-gray-100 border border-gray-200 rounded-lg shadow-md"
@@ -316,9 +342,9 @@ const CarDetails = () => {
         </div>
       </div>
 
-      {/* 💸 Bid Form */}
+      {/* ✅ Bid Section */}
       <motion.div
-        className="p-8 border border-gray-200 shadow-md bg-gray-50 rounded-2xl mb-14"
+        className="p-8 border border-gray-200 shadow-md mb-14 bg-gray-50 rounded-2xl"
         initial={{ opacity: 0, y: 40 }}
         whileInView={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}

@@ -1,31 +1,28 @@
-import { useContext, useEffect, useState } from "react";
-import { AuthContext } from "../Provider/AuthProvider";
-import axios from "axios";
+import { useQuery } from "@tanstack/react-query";
 import toast from "react-hot-toast";
+import useAuth from "../hooks/useAuth";
+import useAxiosSecure from "../hooks/useAxiosSecure";
 
 const MyBids = () => {
-  const { user } = useContext(AuthContext);
-  const [bids, setBids] = useState([]);
+  const { user } = useAuth();
+  const axiosSecure = useAxiosSecure();
 
-  // Fetch bids placed by this user
-  useEffect(() => {
-    if (!user?.email) return;
+  const {
+    data: bids = [],
+    isLoading,
+    isError,
+    error,
+    refetch,
+  } = useQuery({
+    queryKey: ["my-bids", user?.email],
+    enabled: !!user?.email,
+    queryFn: async () => {
+      const { data } = await axiosSecure.get(`/my-bids/${user.email}`);
+      return data || [];
+    },
+    staleTime: 60000,
+  });
 
-    const getData = async () => {
-      try {
-        const { data } = await axios.get(
-          `${import.meta.env.VITE_API_URL}/my-bids/${user.email}`
-        );
-        setBids(data);
-      } catch (error) {
-        console.error("Error fetching bids:", error);
-      }
-    };
-
-    getData();
-  }, [user]);
-
-  // ✅ Handle status change (Mark Complete)
   const handleStatus = async (id, previousStatus, newStatus) => {
     if (previousStatus === newStatus) {
       toast.error("Already marked as completed!");
@@ -33,19 +30,13 @@ const MyBids = () => {
     }
 
     try {
-      const { data } = await axios.patch(
-        `${import.meta.env.VITE_API_URL}/bid/${id}`,
-        { status: newStatus }
-      );
+      const { data } = await axiosSecure.patch(`/bid/${id}`, {
+        status: newStatus,
+      });
 
       if (data.modifiedCount > 0 || data.acknowledged) {
-        // Update UI immediately
-        setBids((prev) =>
-          prev.map((bid) =>
-            bid._id === id ? { ...bid, status: newStatus } : bid
-          )
-        );
         toast.success(`Bid marked as ${newStatus}`);
+        refetch();
       } else {
         toast.error("No changes detected!");
       }
@@ -54,6 +45,18 @@ const MyBids = () => {
       toast.error("Failed to update bid status!");
     }
   };
+
+  if (isLoading)
+    return (
+      <div className="mt-10 text-center text-gray-500">Loading your bids...</div>
+    );
+
+  if (isError)
+    return (
+      <div className="mt-10 text-center text-red-500">
+        Failed to load bids: {error.message}
+      </div>
+    );
 
   return (
     <section className="container px-6 py-12 mx-auto">
@@ -101,7 +104,7 @@ const MyBids = () => {
               </tr>
             ) : (
               bids.map((bid) => (
-                <tr key={bid._id || bid.carId}>
+                <tr key={bid._id}>
                   <td className="px-4 py-4 text-sm text-gray-600">
                     {bid.model_name}
                   </td>
@@ -134,7 +137,6 @@ const MyBids = () => {
                     </span>
                   </td>
 
-                  {/* Status Badge */}
                   <td className="px-4 py-4 text-sm font-medium text-gray-700">
                     <div
                       className={`inline-flex items-center px-3 py-1 rounded-full gap-x-2 ${
@@ -166,7 +168,6 @@ const MyBids = () => {
                     </div>
                   </td>
 
-                  {/* Action Button */}
                   <td className="px-4 py-4 text-sm text-gray-600">
                     <button
                       title="Mark Complete"
