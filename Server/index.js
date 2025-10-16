@@ -8,16 +8,17 @@ require("dotenv").config();
 
 const port = process.env.PORT || 3000;
 
+// ---------------- CORS ----------------
 const corsOptions = {
   origin: ["http://localhost:5173"],
   credentials: true,
   optionsSuccessStatus: 200,
 };
-
 app.use(cors(corsOptions));
 app.use(express.json());
 app.use(cookieParser());
 
+// ---------------- Verify JWT ----------------
 const verifyToken = (req, res, next) => {
   const token = req.cookies?.token;
   if (!token) {
@@ -38,6 +39,7 @@ const verifyToken = (req, res, next) => {
   });
 };
 
+// ---------------- MongoDB ----------------
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.8k7klrr.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
 
 const client = new MongoClient(uri, {
@@ -70,7 +72,9 @@ async function run() {
           .send({ success: true });
       } catch (error) {
         console.error("JWT Error:", error);
-        res.status(500).send({ success: false, message: "Failed to create token" });
+        res
+          .status(500)
+          .send({ success: false, message: "Failed to create token" });
       }
     });
 
@@ -87,11 +91,9 @@ async function run() {
     // ---------------- All Cars (Sorted, Searchable, Paginated) ----------------
     app.get("/all-cars", async (req, res) => {
       const { filter, page = 0, size = 4, search, sort } = req.query;
-
       let query = {};
 
       if (filter) query.brand_name = filter;
-
       if (search) {
         query.$or = [
           { model_name: { $regex: search, $options: "i" } },
@@ -100,10 +102,9 @@ async function run() {
         ];
       }
 
-      // ✅ Sort by dateline (ascending/descending)
       let sortOption = {};
-      if (sort === "asc") sortOption = { dateline: 1 }; // earliest first
-      else if (sort === "dsc") sortOption = { dateline: -1 }; // latest first
+      if (sort === "asc") sortOption = { dateline: 1 };
+      else if (sort === "dsc") sortOption = { dateline: -1 };
 
       const result = await allCollection
         .find(query)
@@ -115,13 +116,12 @@ async function run() {
       res.send(result);
     });
 
-    // ---------------- Count Cars ----------------
+    // ---------------- Cars Count ----------------
     app.get("/cars-count", async (req, res) => {
       const { brand, search } = req.query;
       let query = {};
 
       if (brand) query.brand_name = brand;
-
       if (search) {
         query.$or = [
           { model_name: { $regex: search, $options: "i" } },
@@ -134,12 +134,15 @@ async function run() {
       res.send({ count });
     });
 
-    // ---------------- Other API Routes ----------------
+    // ---------------- Cars Routes ----------------
+
+    // ✅ Get all cars
     app.get("/cars", async (req, res) => {
       const result = await allCollection.find().toArray();
       res.send(result);
     });
 
+    // ✅ Get a single car
     app.get("/car/:id", verifyToken, async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
@@ -147,12 +150,40 @@ async function run() {
       res.send(result);
     });
 
+    // ✅ Add a new car (attach seller email automatically)
     app.post("/car", verifyToken, async (req, res) => {
       const carData = req.body;
+      if (req.user?.email) {
+        carData.seller_email = req.user.email;
+      }
       const result = await allCollection.insertOne(carData);
       res.send(result);
     });
 
+    // ✅ Fetch all cars posted by a specific user
+   app.get("/cars/:email", verifyToken, async (req, res) => {
+  try {
+    const email = req.params.email;
+
+    // double-check token owner for security
+    if (req.user?.email !== email) {
+      return res.status(403).send({ message: "Forbidden access" });
+    }
+
+    // fallback query if old data has no seller_email
+    const query = {
+      $or: [{ seller_email: email }, { "buyer.email": email }]
+    };
+
+    const result = await allCollection.find(query).toArray();
+    res.send(result);
+  } catch (error) {
+    console.error("Error fetching posted cars:", error);
+    res.status(500).send({ message: "Failed to fetch posted cars" });
+  }
+});
+
+    // ✅ Delete a car
     app.delete("/car/:id", verifyToken, async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
@@ -160,6 +191,7 @@ async function run() {
       res.send(result);
     });
 
+    // ✅ Update a car
     app.put("/car/:id", verifyToken, async (req, res) => {
       const id = req.params.id;
       const updatedCar = req.body;

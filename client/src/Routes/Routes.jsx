@@ -13,6 +13,7 @@ import PrivateRoutes from "./PrivateRoutes";
 import MyBids from "../Pages/MyBids";
 import BidRequests from "../Pages/BidRequests";
 import AllCars from "../Pages/AllCars";
+import Contact from "../Pages/Contact";
 
 const router = createBrowserRouter([
   {
@@ -87,6 +88,10 @@ const router = createBrowserRouter([
       {
         path: '/all-cars',
         element: <AllCars/>
+      },
+      {
+        path:'/contact',
+        element:<Contact/>
       }
     ],
   },
