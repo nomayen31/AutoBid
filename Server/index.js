@@ -10,7 +10,11 @@ const port = process.env.PORT || 3000;
 
 // ---------------- CORS ----------------
 const corsOptions = {
-  origin: ["http://localhost:5173"],
+  origin: [
+    "http://localhost:5173",
+    "http://localhost:5174",
+    "https://your-frontend.vercel.app",
+  ],
   credentials: true,
   optionsSuccessStatus: 200,
 };
@@ -161,27 +165,27 @@ async function run() {
     });
 
     // ✅ Fetch all cars posted by a specific user
-   app.get("/cars/:email", verifyToken, async (req, res) => {
-  try {
-    const email = req.params.email;
+    app.get("/cars/:email", verifyToken, async (req, res) => {
+      try {
+        const email = req.params.email;
 
-    // double-check token owner for security
-    if (req.user?.email !== email) {
-      return res.status(403).send({ message: "Forbidden access" });
-    }
+        // double-check token owner for security
+        if (req.user?.email !== email) {
+          return res.status(403).send({ message: "Forbidden access" });
+        }
 
-    // fallback query if old data has no seller_email
-    const query = {
-      $or: [{ seller_email: email }, { "buyer.email": email }]
-    };
+        // fallback query if old data has no seller_email
+        const query = {
+          $or: [{ seller_email: email }, { "buyer.email": email }]
+        };
 
-    const result = await allCollection.find(query).toArray();
-    res.send(result);
-  } catch (error) {
-    console.error("Error fetching posted cars:", error);
-    res.status(500).send({ message: "Failed to fetch posted cars" });
-  }
-});
+        const result = await allCollection.find(query).toArray();
+        res.send(result);
+      } catch (error) {
+        console.error("Error fetching posted cars:", error);
+        res.status(500).send({ message: "Failed to fetch posted cars" });
+      }
+    });
 
     // ✅ Delete a car
     app.delete("/car/:id", verifyToken, async (req, res) => {
