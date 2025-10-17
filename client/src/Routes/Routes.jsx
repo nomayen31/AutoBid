@@ -71,10 +71,6 @@ const router = createBrowserRouter([
         ),
       },
       {
-        path: "/auctions",
-        element: <Auctions />,
-      },
-      {
         path: '/my-bids',
         element: <PrivateRoutes>
           <MyBids />

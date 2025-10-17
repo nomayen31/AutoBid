@@ -75,11 +75,6 @@ const Login = () => {
 
         <div className="w-full px-6 py-8 md:px-8 lg:w-1/2">
           <div className="flex justify-center mx-auto">
-            <img
-              className="w-auto h-7 sm:h-8"
-              src="https://merakiui.com/images/logo.svg"
-              alt=""
-            />
           </div>
 
           <p className="mt-3 text-xl text-center text-gray-600">Welcome back!</p>
@@ -128,6 +123,7 @@ const Login = () => {
               </label>
               <input
                 name="email"
+                value="demo@gmail.com"
                 className="block w-full px-4 py-2 text-gray-700 bg-white border rounded-lg focus:border-blue-400 focus:ring focus:ring-blue-300"
                 type="email"
               />
@@ -139,6 +135,7 @@ const Login = () => {
               </label>
               <input
                 name="password"
+                value="@Demo123#$%@@"
                 className="block w-full px-4 py-2 text-gray-700 bg-white border rounded-lg focus:border-blue-400 focus:ring focus:ring-blue-300"
                 type="password"
               />
