@@ -1,12 +1,10 @@
 import axios from "axios";
-import { useEffect } from "react";
+import { useEffect, useContext } from "react";
 import { useNavigate } from "react-router-dom";
-import { useContext } from "react";
 import { AuthContext } from "../Provider/AuthProvider";
 
-// Create axios instance
 const axiosSecure = axios.create({
-  baseURL: import.meta.env.VITE_API_URL, 
+  baseURL: import.meta.env.VITE_API_URL,
   withCredentials: true,
 });
 
@@ -15,25 +13,39 @@ const useAxiosSecure = () => {
   const { logout } = useContext(AuthContext);
 
   useEffect(() => {
-    // Add a response interceptor
-    const interceptor = axiosSecure.interceptors.response.use(
-      (response) => response, 
-      async (error) => {
-        const status = error?.response?.status;
+    // Request interceptor — attach JWT if available
+    const requestInterceptor = axiosSecure.interceptors.request.use(
+      (config) => {
+        const token = localStorage.getItem("access-token");
+        if (token) config.headers.Authorization = `Bearer ${token}`;
+        return config;
+      },
+      (error) => Promise.reject(error)
+    );
 
-        if (status === 401 || status === 403) {
-          await logout(); 
-          navigate("/login"); 
+    // Response interceptor — handle auth errors
+    const responseInterceptor = axiosSecure.interceptors.response.use(
+      (response) => response,
+      async (error) => {
+        if (!error.response) {
+          console.error("Network error:", error.message);
+          return Promise.reject(error);
         }
 
-        // Always reject the error so the caller can still catch it
+        const status = error.response.status;
+        if (status === 401 || status === 403) {
+          await logout();
+          navigate("/login");
+        }
+
         return Promise.reject(error);
       }
     );
 
-    // Cleanup interceptor on unmount
+    // Cleanup on unmount
     return () => {
-      axiosSecure.interceptors.response.eject(interceptor);
+      axiosSecure.interceptors.request.eject(requestInterceptor);
+      axiosSecure.interceptors.response.eject(responseInterceptor);
     };
   }, [logout, navigate]);
 

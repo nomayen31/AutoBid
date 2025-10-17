@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from "react";
-import axios from "axios";
 import { Tab, Tabs, TabList, TabPanel } from "react-tabs";
 import "react-tabs/style/react-tabs.css";
 import CarCard from "./CarCard";
+import useAxiosSecure from "../hooks/useAxiosSecure";
 
 const TabCategories = () => {
+  const axiosSecure = useAxiosSecure();
   const [cars, setCars] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -12,7 +13,7 @@ const TabCategories = () => {
   useEffect(() => {
     const fetchCars = async () => {
       try {
-        const res = await axios.get(`${import.meta.env.VITE_API_URL}/cars`);
+        const res = await axiosSecure.get("/cars");
         setCars(res.data);
       } catch (err) {
         console.error("Error fetching car data:", err);
@@ -22,7 +23,7 @@ const TabCategories = () => {
       }
     };
     fetchCars();
-  }, []);
+  }, [axiosSecure]);
 
   if (loading)
     return (
@@ -38,11 +39,17 @@ const TabCategories = () => {
       </div>
     );
 
+  if (!cars.length)
+    return (
+      <div className="min-h-screen py-20 text-lg text-center text-gray-400 bg-gray-950">
+        No cars available at the moment.
+      </div>
+    );
+
   const brands = [...new Set(cars.map((car) => car.brand_name))];
 
   return (
-    <div className="w-full text-white bg-gradient-to-b from-gray-950 via-gray-900 to-gray-950 ">
-
+    <div className="w-full text-white bg-gradient-to-b from-gray-950 via-gray-900 to-gray-950">
       <div className="px-6 py-16 mx-auto max-w-7xl">
         <Tabs>
           {/* --- Header Section --- */}
@@ -76,8 +83,8 @@ const TabCategories = () => {
               <div className="grid grid-cols-1 gap-10 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 animate-fadeIn">
                 {cars
                   .filter((car) => car.brand_name === brand)
-                  .map((car, index) => (
-                    <CarCard key={index} car={car} />
+                  .map((car) => (
+                    <CarCard key={car._id} car={car} />
                   ))}
               </div>
             </TabPanel>
