@@ -31,6 +31,18 @@ const Navbar = () => {
           >
             All Cars
           </Link>
+           <Link
+            to="/about"
+            className="text-sm font-medium text-gray-200 transition hover:text-amber-400"
+          >
+           About Us
+          </Link>
+           <Link
+            to="/contact"
+            className="text-sm font-medium text-gray-200 transition hover:text-amber-400"
+          >
+          Contact Us
+          </Link>
        
 
           {/* Login Button */}

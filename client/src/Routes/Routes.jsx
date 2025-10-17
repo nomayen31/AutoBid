@@ -14,6 +14,7 @@ import MyBids from "../Pages/MyBids";
 import BidRequests from "../Pages/BidRequests";
 import AllCars from "../Pages/AllCars";
 import Contact from "../Pages/Contact";
+import About from "../Pages/About";
 
 const router = createBrowserRouter([
   {
@@ -88,6 +89,10 @@ const router = createBrowserRouter([
       {
         path:'/contact',
         element:<Contact/>
+      },
+      {
+        path:'/about',
+        element:<About/>
       }
     ],
   },

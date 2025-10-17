@@ -13,7 +13,6 @@ const useAxiosSecure = () => {
   const { logout } = useContext(AuthContext);
 
   useEffect(() => {
-    // Request interceptor — attach JWT if available
     const requestInterceptor = axiosSecure.interceptors.request.use(
       (config) => {
         const token = localStorage.getItem("access-token");
