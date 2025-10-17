@@ -26,14 +26,14 @@ const TabCategories = () => {
 
   if (loading)
     return (
-      <div className="py-20 text-center text-gray-400 text-lg animate-pulse bg-gray-950 min-h-screen">
+      <div className="min-h-screen py-20 text-lg text-center text-gray-400 animate-pulse bg-gray-950">
         Loading cars...
       </div>
     );
 
   if (error)
     return (
-      <div className="py-20 text-center text-red-500 text-lg font-medium bg-gray-950 min-h-screen">
+      <div className="min-h-screen py-20 text-lg font-medium text-center text-red-500 bg-gray-950">
         {error}
       </div>
     );
@@ -41,16 +41,16 @@ const TabCategories = () => {
   const brands = [...new Set(cars.map((car) => car.brand_name))];
 
   return (
-    <div className="bg-gradient-to-b from-gray-950 via-gray-900 to-gray-950 text-white w-full ">
+    <div className="w-full text-white bg-gradient-to-b from-gray-950 via-gray-900 to-gray-950 ">
 
-      <div className="max-w-7xl mx-auto px-6 py-16">
+      <div className="px-6 py-16 mx-auto max-w-7xl">
         <Tabs>
           {/* --- Header Section --- */}
-          <div className="text-center mb-12">
-            <h1 className="text-4xl md:text-5xl font-extrabold mb-4 text-yellow-400 drop-shadow-lg">
+          <div className="mb-12 text-center">
+            <h1 className="mb-4 text-4xl font-extrabold text-yellow-400 md:text-5xl drop-shadow-lg">
               Browse Cars by Brand
             </h1>
-            <p className="max-w-2xl mx-auto text-gray-400 text-base md:text-lg">
+            <p className="max-w-2xl mx-auto text-base text-gray-400 md:text-lg">
               Explore the world’s most iconic car brands and their signature models — performance, luxury, and innovation in one place.
             </p>
           </div>
@@ -61,7 +61,7 @@ const TabCategories = () => {
               {brands.map((brand) => (
                 <Tab
                   key={brand}
-                  className="px-5 py-2 text-sm md:text-base font-medium text-gray-300 bg-gray-800 rounded-full cursor-pointer hover:bg-yellow-400 hover:text-black transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                  className="px-5 py-2 text-sm font-medium text-gray-300 transition-all duration-300 bg-gray-800 rounded-full cursor-pointer md:text-base hover:bg-yellow-400 hover:text-black focus:outline-none focus:ring-2 focus:ring-yellow-400"
                   selectedClassName="!bg-yellow-400 !text-black shadow-lg scale-105"
                 >
                   {brand}
@@ -73,7 +73,7 @@ const TabCategories = () => {
           {/* --- Tab Panels --- */}
           {brands.map((brand) => (
             <TabPanel key={brand}>
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-10 animate-fadeIn">
+              <div className="grid grid-cols-1 gap-10 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 animate-fadeIn">
                 {cars
                   .filter((car) => car.brand_name === brand)
                   .map((car, index) => (
